@@ -6,7 +6,8 @@ import axios from 'axios';
 const getBaseUrl = () => {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
-      return import.meta.env.VITE_API_BASE_URL;
+      const url = String(import.meta.env.VITE_API_BASE_URL).trim();
+      return url.replace(/\/+$/, '');
     }
   } catch (e) {
     console.warn('Could not read Vite environment variables:', e);
