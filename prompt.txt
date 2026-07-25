@@ -1,0 +1,488 @@
+# PROJECT: ShopLite - React Native + React Admin + Node.js + MongoDB
+#
+# Build a complete full-stack application with a React Native mobile app for users,
+# a React web admin panel, and a shared Node.js + Express backend using MongoDB.
+#
+# IMPORTANT:
+# - Generate production-quality code.
+# - Keep the code modular and clean.
+# - Use JavaScript only (NO TypeScript).
+# - Follow MVC architecture.
+# - Build the project step-by-step.
+# - Ensure the application runs without errors.
+#
+# ============================================================
+# TECH STACK
+# ============================================================
+#
+# Mobile App
+# - React Native (Expo)
+# - React Navigation
+# - Axios
+# - AsyncStorage
+#
+# Admin Panel
+# - React.js (Vite)
+# - Tailwind CSS
+# - React Router DOM
+# - Axios
+#
+# Backend
+# - Node.js
+# - Express.js
+# - MongoDB Atlas
+# - Mongoose
+# - JWT Authentication
+# - bcryptjs
+# - Multer (for image upload)
+# - dotenv
+# - cors
+#
+#
+# ============================================================
+# PROJECT STRUCTURE
+# ============================================================
+#
+# shoplite/
+#
+# backend/
+#
+# admin/
+#
+# mobile/
+#
+#
+# ============================================================
+# BACKEND
+# ============================================================
+#
+# Create a clean MVC backend.
+#
+# backend/
+#
+# config/
+# database.js
+#
+# controllers/
+# authController.js
+# productController.js
+# userController.js
+#
+# middleware/
+# authMiddleware.js
+# adminMiddleware.js
+#
+# models/
+# User.js
+# Product.js
+#
+# routes/
+# authRoutes.js
+# productRoutes.js
+# userRoutes.js
+#
+# uploads/
+#
+# .env
+#
+# server.js
+#
+#
+# ============================================================
+# DATABASE MODELS
+# ============================================================
+#
+# USER MODEL
+#
+# name
+# email
+# password (hashed)
+# role
+# createdAt
+#
+# role values
+#
+# admin
+# user
+#
+#
+# PRODUCT MODEL
+#
+# title
+# description
+# price
+# image
+# category
+# stock
+# createdAt
+#
+#
+# ============================================================
+# AUTHENTICATION
+# ============================================================
+#
+# JWT Authentication.
+#
+# Password hashing using bcrypt.
+#
+# Store JWT in AsyncStorage in React Native.
+#
+# Store JWT in localStorage for Admin.
+#
+# Protected Routes.
+#
+#
+# ============================================================
+# API ENDPOINTS
+# ============================================================
+#
+# AUTH
+#
+# POST /api/auth/register
+#
+# POST /api/auth/login
+#
+#
+# USERS
+#
+# GET /api/users
+#
+# GET /api/users/count
+#
+#
+# PRODUCTS
+#
+# GET /api/products
+#
+# GET /api/products/:id
+#
+# POST /api/products
+#
+# PUT /api/products/:id
+#
+# DELETE /api/products/:id
+#
+#
+# ============================================================
+# ADMIN PANEL
+# ============================================================
+#
+# Build a professional dashboard.
+#
+# Pages
+#
+# Login
+#
+# Dashboard
+#
+# Products
+#
+# Add Product
+#
+# Edit Product
+#
+# Users
+#
+#
+# Dashboard Cards
+#
+# Total Users
+#
+# Total Products
+#
+#
+# Sidebar
+#
+# Dashboard
+#
+# Products
+#
+# Users
+#
+# Logout
+#
+#
+# Product Table
+#
+# Image
+#
+# Name
+#
+# Price
+#
+# Category
+#
+# Stock
+#
+# Actions
+#
+#
+# Product CRUD
+#
+# Add Product
+#
+# Edit Product
+#
+# Delete Product
+#
+#
+# User Page
+#
+# Display
+#
+# Name
+#
+# Email
+#
+# Created Date
+#
+#
+# ============================================================
+# MOBILE APPLICATION
+# ============================================================
+#
+# Use Expo.
+#
+# Create React Navigation.
+#
+# Navigation
+#
+# Splash Screen
+#
+# Login
+#
+# Register
+#
+# Home
+#
+# Product Details
+#
+# Profile
+#
+#
+# Home Screen
+#
+# Fetch products from backend.
+#
+# Display products in cards.
+#
+# Product card should include:
+#
+# Image
+#
+# Product Name
+#
+# Price
+#
+# Category
+#
+# Clicking card opens Product Details.
+#
+#
+# Product Details
+#
+# Large Image
+#
+# Title
+#
+# Description
+#
+# Price
+#
+# Category
+#
+# Stock
+#
+#
+# Profile Screen
+#
+# Show
+#
+# User Name
+#
+# Email
+#
+# Logout
+#
+#
+# ============================================================
+# UI DESIGN
+# ============================================================
+#
+# Modern minimal UI.
+#
+# White background.
+#
+# Blue primary colour.
+#
+# Rounded cards.
+#
+# Soft shadows.
+#
+# Responsive.
+#
+# Reusable Components.
+#
+#
+# ============================================================
+# REACT NATIVE COMPONENTS
+# ============================================================
+#
+# ProductCard
+#
+# CustomButton
+#
+# CustomInput
+#
+# Loader
+#
+# EmptyState
+#
+#
+# ============================================================
+# ADMIN COMPONENTS
+# ============================================================
+#
+# Sidebar
+#
+# Navbar
+#
+# DashboardCard
+#
+# ProductTable
+#
+# UserTable
+#
+# Loader
+#
+#
+# ============================================================
+# STATE MANAGEMENT
+# ============================================================
+#
+# Use React Context API.
+#
+# Create:
+#
+# AuthContext
+#
+# ProductContext
+#
+#
+# ============================================================
+# IMAGE UPLOAD
+# ============================================================
+#
+# Admin can upload product image.
+#
+# Save image path in MongoDB.
+#
+# Store uploaded files inside:
+#
+# backend/uploads/
+#
+#
+# ============================================================
+# ERROR HANDLING
+# ============================================================
+#
+# Handle:
+#
+# Invalid Login
+#
+# Duplicate Email
+#
+# Invalid JWT
+#
+# Missing Product
+#
+# Validation Errors
+#
+#
+# ============================================================
+# SECURITY
+# ============================================================
+#
+# Hash passwords.
+#
+# JWT authentication.
+#
+# Admin-only middleware.
+#
+# Environment variables.
+#
+#
+# ============================================================
+# CODE QUALITY
+# ============================================================
+#
+# Use clean folder structure.
+#
+# Separate Controllers.
+#
+# Separate Routes.
+#
+# Separate Models.
+#
+# Reusable Components.
+#
+# No duplicate code.
+#
+# Proper comments.
+#
+# Professional naming.
+#
+#
+# ============================================================
+# DELIVERABLES
+# ============================================================
+#
+# Generate:
+#
+# ✔ Complete Backend
+#
+# ✔ Complete Admin Panel
+#
+# ✔ Complete React Native App
+#
+# ✔ MongoDB Integration
+#
+# ✔ Authentication
+#
+# ✔ Product CRUD
+#
+# ✔ User Management
+#
+# ✔ Dashboard
+#
+# ✔ Responsive UI
+#
+# ✔ Working API
+#
+# ✔ README.md with setup instructions
+#
+# ✔ .env.example
+#
+# ✔ Seed script to create one admin account:
+#
+# Email: admin@example.com
+# Password: Admin@123
+#
+# ============================================================
+# IMPORTANT
+# ============================================================
+#
+# Build the project incrementally.
+#
+# Ensure every feature is tested before moving to the next.
+#
+# Do not leave placeholders or TODOs.
+#
+# Use best coding practices and create a fully functional application
+# that can be run locally with:
+#
+# Backend: npm run dev
+# Admin: npm run dev
+# Mobile: npx expo start
+#
+# The final project should be portfolio-ready and production-quality.
