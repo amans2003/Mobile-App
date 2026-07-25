@@ -43,7 +43,7 @@ const ProductTable = ({ products, onDelete }) => {
                 <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 shadow-sm">
                   {product.image ? (
                     <img
-                      src={product.image.startsWith('http') ? product.image : `http://localhost:5001${product.image}`}
+                      src={product.image.startsWith('http') ? product.image : `https://mobile-app-999f.onrender.com${product.image}`}
                       alt={product.title}
                       className="w-full h-full object-cover"
                     />

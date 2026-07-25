@@ -8,7 +8,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
  * - iOS Simulator / Physical Device: http://localhost:5001/api
  * - If using a real device on the same network, use your machine's IP
  */
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL = 'https://mobile-app-999f.onrender.com/api';
 
 /**
  * Axios instance configured for the ShopLite API

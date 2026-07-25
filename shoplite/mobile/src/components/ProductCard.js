@@ -13,7 +13,7 @@ const ProductCard = ({ product = {}, onPress }) => {
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
     const strPath = String(imagePath);
-    return strPath.startsWith('http') ? strPath : `http://localhost:5001${strPath}`;
+    return strPath.startsWith('http') ? strPath : `https://mobile-app-999f.onrender.com${strPath}`;
   };
 
   const imageUrl = getImageUrl(product.image);

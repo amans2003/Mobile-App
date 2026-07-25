@@ -213,7 +213,7 @@ const EditProduct = () => {
               {(imagePreview || currentImage) && (
                 <div className="mb-3 flex items-center gap-4">
                   <img
-                    src={imagePreview || (currentImage.startsWith('http') ? currentImage : `http://localhost:5001${currentImage}`)}
+                    src={imagePreview || (currentImage.startsWith('http') ? currentImage : `https://mobile-app-999f.onrender.com${currentImage}`)}
                     alt="Product"
                     className="w-24 h-24 object-cover rounded-xl shadow-sm border border-gray-100"
                   />

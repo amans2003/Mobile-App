@@ -12,7 +12,7 @@ const getBaseUrl = () => {
   } catch (e) {
     console.warn('Could not read Vite environment variables:', e);
   }
-  return 'http://localhost:5001/api';
+  return 'https://mobile-app-999f.onrender.com/api';
 };
 
 /**

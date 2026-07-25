@@ -61,7 +61,7 @@ const ProductDetailScreen = ({ route }) => {
   const imageUrl = currentProduct?.image
     ? String(currentProduct.image).startsWith('http')
       ? currentProduct.image
-      : `http://localhost:5001${currentProduct.image}`
+      : `https://mobile-app-999f.onrender.com${currentProduct.image}`
     : null;
 
   const numericPrice = Number(currentProduct?.price || 0).toFixed(2);
