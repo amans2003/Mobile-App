@@ -3,15 +3,9 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 /**
  * API Base URL — Enterprise HRIS Backend
- * 
- * Notice: Using your Mac's Local IP (192.168.0.154:5001) so your phone can immediately test
- * all new HRIS features (Attendance, Time Off, Salary) running on your local backend server!
- * Ensure your phone is connected to the same Wi-Fi network as your computer.
- * 
- * If you deploy the backend updates to Render, you can switch back to:
- * const API_BASE_URL = 'https://mobile-app-999f.onrender.com/api';
+ * Connected directly to live cloud infrastructure on Render so the app functions seamlessly anywhere via Expo Go!
  */
-const API_BASE_URL = 'http://192.168.0.154:5001/api';
+const API_BASE_URL = 'https://mobile-app-999f.onrender.com/api';
 
 /**
  * Axios instance configured for the Enterprise HRIS API

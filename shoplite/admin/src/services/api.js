@@ -6,16 +6,21 @@ import axios from 'axios';
 const getBaseUrl = () => {
   try {
     if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) {
-      const url = String(import.meta.env.VITE_API_BASE_URL).trim();
+      let url = String(import.meta.env.VITE_API_BASE_URL).trim();
       if (url) {
-        return url.replace(/\/+$/, '');
+        url = url.replace(/\/+$/, '');
+        // Automatically append /api if omitted in Render or Vercel environment variables
+        if (!url.endsWith('/api')) {
+          url += '/api';
+        }
+        return url;
       }
     }
   } catch (e) {
     console.warn('Could not read Vite environment variables:', e);
   }
-  // Connect directly to local HRIS backend running on port 5001
-  return 'http://localhost:5001/api';
+  // Fallback directly to live cloud server or local server
+  return 'https://mobile-app-999f.onrender.com/api';
 };
 
 /**

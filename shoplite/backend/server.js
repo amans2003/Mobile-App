@@ -43,33 +43,33 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // ROUTES — Enterprise HRIS API
 // ============================================================
 
-// Auth
-app.use('/api/auth', authRoutes);
+// Auth (mounted with and without /api prefix for robust compatibility)
+app.use(['/api/auth', '/auth'], authRoutes);
 
 // Employee Management & Directory
-app.use('/api/employees', employeeRoutes);
+app.use(['/api/employees', '/employees'], employeeRoutes);
 
 // Attendance — Check-In / Check-Out
-app.use('/api/attendance', attendanceRoutes);
+app.use(['/api/attendance', '/attendance'], attendanceRoutes);
 
 // Leave Requests
-app.use('/api/leaves', leaveRoutes);
+app.use(['/api/leaves', '/leaves'], leaveRoutes);
 
 // Payroll & Salary
-app.use('/api/payroll', payrollRoutes);
+app.use(['/api/payroll', '/payroll'], payrollRoutes);
 
 // Expense Claims
-app.use('/api/expenses', expenseRoutes);
+app.use(['/api/expenses', '/expenses'], expenseRoutes);
 
 // Meetings
-app.use('/api/meetings', meetingRoutes);
+app.use(['/api/meetings', '/meetings'], meetingRoutes);
 
 // Announcements & Company Feed
-app.use('/api/announcements', announcementRoutes);
+app.use(['/api/announcements', '/announcements'], announcementRoutes);
 
 // Health check endpoint
-app.get('/', (req, res) => {
-  res.json({ message: 'Enterprise HRIS API is running', version: '2.0.0' });
+app.get(['/', '/api'], (req, res) => {
+  res.json({ message: 'Enterprise HRIS API is running', version: '2.0.0', status: 'healthy' });
 });
 
 // ============================================================
