@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchEmployees, generatePayroll, fetchPayrollStats } from '../services/api';
+import { fetchEmployees, generatePayroll, fetchPayrollStats, fetchPayrollRecords } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -13,17 +13,26 @@ const Payroll = () => {
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
   const [payStats, setPayStats] = useState(null);
+  const [payrollMap, setPayrollMap] = useState({});
   const [generating, setGenerating] = useState(false);
 
   const loadData = async () => {
     try {
       setLoading(true);
-      const [empRes, statRes] = await Promise.all([
+      const [empRes, statRes, recRes] = await Promise.all([
         fetchEmployees({ status: 'active' }).catch(() => ({ data: [] })),
         fetchPayrollStats({ month, year }).catch(() => ({ data: null })),
+        fetchPayrollRecords({ month, year }).catch(() => ({ data: [] })),
       ]);
       setEmployees(empRes.data || []);
       setPayStats(statRes.data);
+
+      const map = {};
+      (recRes.data || []).forEach(r => {
+        const empId = r.employee?._id || r.employee;
+        if (empId) map[empId] = r;
+      });
+      setPayrollMap(map);
     } catch (error) {
       console.error('Error loading payroll data:', error);
     } finally {
@@ -145,12 +154,11 @@ const Payroll = () => {
                   const empGross = Number(s.basic || 0) + Number(s.hra || 0) + Number(s.transport || 0) + Number(s.medical || 0) + Number(s.special || 0);
                   const empDeductions = Number(d.tax || 0) + Number(d.insurance || 0) + Number(d.providentFund || 0);
                   
-                  // Simulated sample attendance metrics for realistic governance visual
-                  const presentDays = emp.presentDays ?? 26;
-                  const halfDays = emp.halfDays ?? (emp.name.length % 2 === 0 ? 2 : 0); // realistic variance demo
-                  const perDayRate = empGross / 30;
-                  const attendanceDeduction = Math.round((halfDays * 0.5) * perDayRate);
-                  const finalTakeHome = Math.max(0, empGross - empDeductions - attendanceDeduction);
+                  const rec = payrollMap[emp._id];
+                  const presentDays = rec ? rec.presentDays : (emp.presentDays ?? 30);
+                  const halfDays = rec ? Math.max(0, (rec.workingDays - rec.presentDays) * 2) : 0;
+                  const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : 0;
+                  const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - empDeductions - attendanceDeduction);
 
                   return (
                     <tr key={emp._id} className="hover:bg-slate-50 transition-colors">
@@ -163,16 +171,16 @@ const Payroll = () => {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-black mr-1">
-                          {presentDays}f Full
+                          {presentDays} Days
                         </span>
                         {halfDays > 0 && (
                           <span className="px-2.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 text-[11px] font-black">
-                            {halfDays} Half
+                            {halfDays} Half/Missed
                           </span>
                         )}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-amber-800">
-                        {attendanceDeduction > 0 ? `- ${formatINR(attendanceDeduction)}` : '₹0 (100% Present)'}
+                        {attendanceDeduction > 0 ? `- ${formatINR(attendanceDeduction)}` : '₹0'}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-rose-700">
                         - {formatINR(empDeductions)}
