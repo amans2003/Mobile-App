@@ -40,7 +40,7 @@ const WEEK_DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
  * LeaveScreen — Apply for leave with interactive Calendar picker, view balances, and track request status
  */
 const LeaveScreen = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { theme } = useTheme();
   const [leaves, setLeaves] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -55,12 +55,13 @@ const LeaveScreen = () => {
 
   const loadLeaves = useCallback(async () => {
     try {
+      if (refreshUser) refreshUser().catch(() => {});
       const res = await getMyLeaves();
       setLeaves(res?.data || []);
     } catch (error) {
       console.log('Load leaves notice:', error?.message);
     }
-  }, []);
+  }, [refreshUser]);
 
   useEffect(() => { loadLeaves(); }, [loadLeaves]);
 

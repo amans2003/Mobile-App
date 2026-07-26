@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { loginUser, registerUser } from '../services/api';
+import { loginUser, registerUser, getMyProfile } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -24,7 +24,19 @@ export const AuthProvider = ({ children }) => {
 
         if (storedToken && storedUser) {
           setToken(storedToken);
-          setUser(JSON.parse(storedUser));
+          const parsed = JSON.parse(storedUser);
+          setUser(parsed);
+          // Proactively fetch latest profile updates (leave balances, salary, role) from backend server
+          try {
+            const res = await getMyProfile();
+            if (res?.data) {
+              const merged = { ...parsed, ...res.data };
+              await AsyncStorage.setItem('user', JSON.stringify(merged));
+              setUser(merged);
+            }
+          } catch (syncErr) {
+            console.log('Notice background profile sync:', syncErr?.message);
+          }
         }
       } catch (err) {
         console.log('Notice loading auth data:', err?.message);
@@ -92,8 +104,25 @@ export const AuthProvider = ({ children }) => {
     setError(null);
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    try {
+      const res = await getMyProfile();
+      if (res?.data) {
+        const stored = await AsyncStorage.getItem('user');
+        const parsed = stored ? JSON.parse(stored) : {};
+        const merged = { ...parsed, ...res.data };
+        await AsyncStorage.setItem('user', JSON.stringify(merged));
+        setUser(merged);
+        return merged;
+      }
+    } catch (e) {
+      console.log('Notice refreshing user:', e?.message);
+    }
+    return null;
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, error, login, register, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

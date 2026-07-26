@@ -39,7 +39,7 @@ const safeShortDate = (dateStr) => {
  * Quick status, attendance widget, announcements feed, and pending leave summary
  */
 const HomeScreen = ({ navigation }) => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { theme } = useTheme();
   const [todayAttendance, setTodayAttendance] = useState(null);
   const [announcements, setAnnouncements] = useState([]);
@@ -48,6 +48,7 @@ const HomeScreen = ({ navigation }) => {
 
   const loadData = useCallback(async () => {
     try {
+      if (refreshUser) refreshUser().catch(() => {});
       const [attRes, annRes, leaveRes] = await Promise.all([
         getMyTodayAttendance().catch(() => ({ data: null })),
         getAnnouncements().catch(() => ({ data: [] })),
@@ -59,7 +60,7 @@ const HomeScreen = ({ navigation }) => {
     } catch (error) {
       console.log('Dashboard fallback load:', error?.message);
     }
-  }, []);
+  }, [refreshUser]);
 
   useEffect(() => { loadData(); }, [loadData]);
 
