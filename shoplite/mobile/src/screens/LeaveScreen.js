@@ -195,9 +195,17 @@ const LeaveScreen = () => {
   };
 
   const balances = user?.leaveBalances || {};
-  const ptoLeft = balances.pto ?? 20;
-  const sickLeft = balances.sick ?? 10;
-  const casualLeft = balances.casual ?? 7;
+  const ptoLeft = Number(balances.pto ?? 20);
+  const sickLeft = Number(balances.sick ?? 10);
+  const casualLeft = Number(balances.casual ?? 7);
+
+  const ptoUsed = leaves.filter(l => l.status === 'approved' && (l.leaveType === 'pto' || l.leaveType === 'annual')).reduce((sum, l) => sum + (l.totalDays || 1), 0);
+  const sickUsed = leaves.filter(l => l.status === 'approved' && l.leaveType === 'sick').reduce((sum, l) => sum + (l.totalDays || 1), 0);
+  const casualUsed = leaves.filter(l => l.status === 'approved' && l.leaveType === 'casual').reduce((sum, l) => sum + (l.totalDays || 1), 0);
+
+  const ptoTotal = ptoLeft + ptoUsed;
+  const sickTotal = sickLeft + sickUsed;
+  const casualTotal = casualLeft + casualUsed;
 
   const statusColors = {
     pending: '#f59e0b', approved: '#10b981', rejected: '#ef4444', cancelled: '#9ca3af',
@@ -288,17 +296,17 @@ const LeaveScreen = () => {
         <View style={[styles.balanceCard, { borderTopWidth: 4, borderTopColor: '#10b981' }]}>
           <Text style={[styles.balanceNum, { color: '#10b981' }]}>{ptoLeft}</Text>
           <Text style={styles.balanceLabel}>🏖️ Paid Leave Left</Text>
-          <Text style={styles.balanceSub}>{ptoUsed} used / {balances.pto || 20} total</Text>
+          <Text style={styles.balanceSub}>{ptoUsed} used / {ptoTotal} total</Text>
         </View>
         <View style={[styles.balanceCard, { borderTopWidth: 4, borderTopColor: '#ef4444' }]}>
           <Text style={[styles.balanceNum, { color: '#ef4444' }]}>{sickLeft}</Text>
           <Text style={styles.balanceLabel}>🤒 Sick Leave Left</Text>
-          <Text style={styles.balanceSub}>{sickUsed} used / {balances.sick || 10} total</Text>
+          <Text style={styles.balanceSub}>{sickUsed} used / {sickTotal} total</Text>
         </View>
         <View style={[styles.balanceCard, { borderTopWidth: 4, borderTopColor: '#3b82f6' }]}>
           <Text style={[styles.balanceNum, { color: '#3b82f6' }]}>{casualLeft}</Text>
           <Text style={styles.balanceLabel}>⚡ Casual Left</Text>
-          <Text style={styles.balanceSub}>{casualUsed} used / {balances.casual || 7} total</Text>
+          <Text style={styles.balanceSub}>{casualUsed} used / {casualTotal} total</Text>
         </View>
       </View>
 
