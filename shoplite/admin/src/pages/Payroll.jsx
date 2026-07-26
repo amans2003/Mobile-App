@@ -155,8 +155,8 @@ const Payroll = () => {
                   const empDeductions = Number(d.tax || 0) + Number(d.insurance || 0) + Number(d.providentFund || 0);
                   
                   const rec = payrollMap[emp._id];
-                  const presentDays = rec ? rec.presentDays : (emp.presentDays ?? 30);
-                  const halfDays = rec ? Math.max(0, (rec.workingDays - rec.presentDays) * 2) : 0;
+                  const presentDays = rec ? rec.presentDays : (emp.presentDays ?? 26);
+                  const unpaidDays = rec ? (rec.unpaidLeaveDays || 0) : 0;
                   const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : 0;
                   const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - empDeductions - attendanceDeduction);
 
@@ -171,11 +171,11 @@ const Payroll = () => {
                       </td>
                       <td className="py-3 px-4 text-center">
                         <span className="px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-black mr-1">
-                          {presentDays} Days
+                          {presentDays}d Present
                         </span>
-                        {halfDays > 0 && (
+                        {unpaidDays > 0 && (
                           <span className="px-2.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 text-[11px] font-black">
-                            {halfDays} Half/Missed
+                            {unpaidDays}d Absent/Unpaid
                           </span>
                         )}
                       </td>
