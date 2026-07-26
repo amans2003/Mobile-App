@@ -1,5 +1,6 @@
 const LeaveRequest = require('../models/LeaveRequest');
 const User = require('../models/User');
+const Attendance = require('../models/Attendance');
 
 /**
  * @desc    Apply for leave
@@ -133,6 +134,26 @@ const reviewLeave = async (req, res) => {
             (user.leaveBalances[leave.leaveType] || 0) - leave.totalDays
           );
           await user.save();
+        }
+        
+        // Automatically register approved paid leaves in the attendance register as "on_leave"
+        // This ensures the payroll engine counts these days as 100% present with ZERO salary deduction!
+        let currDate = new Date(leave.startDate);
+        const endDt = new Date(leave.endDate);
+        while (currDate <= endDt) {
+          const dateStr = currDate.toISOString().split('T')[0];
+          await Attendance.findOneAndUpdate(
+            { employee: leave.employee, date: dateStr },
+            {
+              employee: leave.employee,
+              date: dateStr,
+              status: 'on_leave',
+              notes: `Approved Paid Leave (${leave.leaveType.toUpperCase()}) - Zero Salary Deduction`,
+              workHours: 8,
+            },
+            { new: true, upsert: true }
+          );
+          currDate.setDate(currDate.getDate() + 1);
         }
       }
     }
