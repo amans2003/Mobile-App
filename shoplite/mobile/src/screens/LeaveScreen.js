@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { applyLeave, getMyLeaves, cancelLeave } from '../services/api';
@@ -63,7 +64,11 @@ const LeaveScreen = () => {
     }
   }, [refreshUser]);
 
-  useEffect(() => { loadLeaves(); }, [loadLeaves]);
+  useFocusEffect(
+    useCallback(() => {
+      loadLeaves();
+    }, [loadLeaves])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -189,16 +194,10 @@ const LeaveScreen = () => {
     ]);
   };
 
-  const balances = user?.leaveBalances || { pto: 20, sick: 10, casual: 7 };
-
-  // Calculate used leaves by type from approved requests
-  const ptoUsed = leaves.filter(l => l.status === 'approved' && (l.leaveType === 'pto' || l.leaveType === 'annual')).reduce((sum, l) => sum + (l.totalDays || 1), 0);
-  const sickUsed = leaves.filter(l => l.status === 'approved' && l.leaveType === 'sick').reduce((sum, l) => sum + (l.totalDays || 1), 0);
-  const casualUsed = leaves.filter(l => l.status === 'approved' && l.leaveType === 'casual').reduce((sum, l) => sum + (l.totalDays || 1), 0);
-
-  const ptoLeft = Math.max(0, (balances.pto || 20) - ptoUsed);
-  const sickLeft = Math.max(0, (balances.sick || 10) - sickUsed);
-  const casualLeft = Math.max(0, (balances.casual || 7) - casualUsed);
+  const balances = user?.leaveBalances || {};
+  const ptoLeft = balances.pto ?? 20;
+  const sickLeft = balances.sick ?? 10;
+  const casualLeft = balances.casual ?? 7;
 
   const statusColors = {
     pending: '#f59e0b', approved: '#10b981', rejected: '#ef4444', cancelled: '#9ca3af',
