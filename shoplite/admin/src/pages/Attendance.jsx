@@ -78,6 +78,15 @@ const Attendance = () => {
     }
   };
 
+  const safeFormatTime = (timeData) => {
+    if (!timeData) return '—';
+    const val = timeData?.time || (typeof timeData === 'string' ? timeData : (timeData instanceof Date ? timeData : null));
+    if (!val) return '—';
+    const dt = new Date(val);
+    if (isNaN(dt.getTime())) return '—';
+    return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
+  };
+
   const statusStyle = {
     present: 'bg-emerald-100 text-emerald-950 border-emerald-300 font-black',
     late: 'bg-amber-100 text-amber-950 border-amber-300 font-black',
@@ -219,10 +228,10 @@ const Attendance = () => {
                       <p className="text-[11px] text-slate-400 font-mono">{record.employee?.department || 'General'}</p>
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-800 font-extrabold">
-                      {record.checkIn ? new Date(record.checkIn).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {safeFormatTime(record.checkIn)}
                     </td>
                     <td className="py-3 px-4 font-mono text-slate-800 font-extrabold">
-                      {record.checkOut ? new Date(record.checkOut).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                      {safeFormatTime(record.checkOut)}
                     </td>
                     <td className="py-3 px-4">
                       <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${statusStyle[record.status] || 'bg-slate-100 text-slate-700'}`}>
