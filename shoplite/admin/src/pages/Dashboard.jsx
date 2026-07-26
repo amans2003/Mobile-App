@@ -11,26 +11,33 @@ import {
 } from '../services/api';
 
 /**
- * StatCard — Reusable dashboard metric card
+ * Compact Stat Box — High-efficiency small metric card in white against slate-900 accents
  */
-const StatCard = ({ title, value, icon, gradient, subtitle }) => (
-  <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow duration-300">
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-500">{title}</p>
-        <p className="text-3xl font-bold text-gray-900 mt-1">{value}</p>
-        {subtitle && <p className="text-xs text-gray-400 mt-1">{subtitle}</p>}
+const SmallStatBox = ({ title, value, badge, subtext, icon }) => (
+  <div className="bg-white rounded-xl p-4 border border-slate-200/90 shadow-2xs flex flex-col justify-between hover:border-slate-400 transition-all duration-150">
+    <div className="flex items-start justify-between gap-2 mb-2">
+      <span className="text-[11px] font-extrabold uppercase text-slate-500 tracking-wider block truncate">{title}</span>
+      <span className="w-7 h-7 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs shrink-0 font-bold">
+        {icon || '■'}
+      </span>
+    </div>
+    <div>
+      <div className="flex items-baseline gap-2">
+        <span className="text-2xl font-black text-slate-900 tracking-tight">{value}</span>
+        {badge && (
+          <span className="text-[10px] font-black px-2 py-0.5 rounded bg-slate-900 text-white uppercase">
+            {badge}
+          </span>
+        )}
       </div>
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${gradient}`}>
-        {icon}
-      </div>
+      {subtext && <p className="text-[11px] font-bold text-slate-500 mt-1 truncate">{subtext}</p>}
     </div>
   </div>
 );
 
 /**
- * Dashboard — Enterprise HRIS Main Dashboard
- * Displays pending onboarding approval queue directly on landing along with key operational metrics
+ * Dashboard — Compact, structured, responsive executive operations center
+ * Strictly using sidebar slate-900 for sections and crisp white containers for data.
  */
 const Dashboard = () => {
   const { user } = useAuth();
@@ -61,7 +68,7 @@ const Dashboard = () => {
 
       try {
         const leaveRes = await fetchAllLeaves({ status: 'pending' });
-        setPendingLeaves(leaveRes.data.length);
+        setPendingLeaves(leaveRes.data?.length || 0);
       } catch (e) {}
     } catch (error) {
       console.error('Dashboard load error:', error);
@@ -78,10 +85,10 @@ const Dashboard = () => {
     try {
       await updateEmployee(emp._id, {
         status: 'active',
-        department: emp.department || 'General Staff',
+        department: emp.department || 'General',
         designation: emp.designation || 'Staff Member',
       });
-      alert(`✅ ${emp.name}'s employee account has been approved and activated!`);
+      alert(`✅ ${emp.name}'s account approved!`);
       loadDashboardData();
     } catch (error) {
       alert(error.response?.data?.message || 'Error approving employee');
@@ -89,7 +96,7 @@ const Dashboard = () => {
   };
 
   const handleRejectEmployee = async (emp) => {
-    if (window.confirm(`Are you sure you want to reject and delete the registration request from ${emp.name}?`)) {
+    if (window.confirm(`Reject and delete registration for ${emp.name}?`)) {
       try {
         await deleteEmployee(emp._id);
         loadDashboardData();
@@ -99,167 +106,171 @@ const Dashboard = () => {
     }
   };
 
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+  const formatINR = (val) => {
+    if (!val && val !== 0) return '₹0';
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
   };
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-96">
-        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+      <div className="flex items-center justify-center py-32">
+        <div className="w-8 h-8 border-3 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="p-8">
-      {/* Header */}
-      <div className="mb-8 flex items-center justify-between">
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* Executive Header Box (Sidebar slate-900 color) */}
+      <div className="bg-slate-900 text-white rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-slate-800">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            {greeting()}, {user?.name?.split(' ')[0]} 👋
+          <h1 className="text-base sm:text-lg font-black tracking-tight uppercase flex items-center gap-2">
+            <span>📊 HR Executive Operations Hub</span>
           </h1>
-          <p className="text-gray-500 mt-1">Here is your live HR and operational overview today</p>
+          <p className="text-xs text-slate-300 font-medium mt-0.5">
+            Welcome, <strong className="text-white font-bold">{user?.name}</strong> · Active real-time surveillance of staffing, leave quotas, and pro-rata salaries.
+          </p>
         </div>
         <button
           onClick={loadDashboardData}
-          className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors flex items-center gap-1.5"
+          className="px-3.5 py-2 rounded-lg bg-white text-slate-900 hover:bg-slate-100 text-xs font-black uppercase transition-all shadow shrink-0 active:scale-95 cursor-pointer"
         >
-          🔄 Refresh Dashboard
+          🔄 Refresh Feed
         </button>
       </div>
 
-      {/* 🚨 Immediate HR Action: Pending Employee Onboarding Queue */}
-      {pendingEmployees.length > 0 && (
-        <div className="mb-8 bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 border-2 border-amber-400 rounded-2xl p-6 shadow-md">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-3xl">🚨</span>
-            <div className="flex-1">
-              <h2 className="text-xl font-extrabold text-amber-950 flex items-center gap-2">
-                Pending Employee Sign-Ups Awaiting Approval
-                <span className="px-2.5 py-0.5 bg-amber-500 text-white text-xs font-bold rounded-full animate-bounce">
-                  {pendingEmployees.length} New
-                </span>
-              </h2>
-              <p className="text-sm text-amber-800 font-medium">
-                These team members registered through the mobile app. Approve their applications so they can log in and record attendance.
-              </p>
-            </div>
-            <a
-              href="/employees"
-              className="text-xs font-bold text-indigo-700 hover:underline bg-white px-3 py-1.5 rounded-lg shadow-sm border border-indigo-100"
-            >
-              View Directory →
-            </a>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
-            {pendingEmployees.map((emp) => (
-              <div key={emp._id} className="bg-white rounded-xl p-5 border border-amber-200 shadow-sm flex flex-col justify-between hover:shadow-md transition-shadow">
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-gray-900 text-base">{emp.name}</span>
-                    <span className="px-2.5 py-0.5 text-[11px] font-extrabold bg-amber-100 text-amber-800 rounded-full border border-amber-300">
-                      Pending HR Review
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-600 mb-1 flex items-center gap-1">
-                    <span>📧</span> {emp.email}
-                  </p>
-                  <p className="text-xs text-gray-500 mb-4 flex items-center gap-1">
-                    <span>📱</span> {emp.phone || 'No phone provided'}
-                  </p>
-                </div>
-                <div className="flex gap-2 pt-3 border-t border-gray-100">
-                  <button
-                    onClick={() => handleApproveEmployee(emp)}
-                    className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <span>✓</span> Approve & Activate
-                  </button>
-                  <button
-                    onClick={() => handleRejectEmployee(emp)}
-                    className="py-2 px-3 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-xs rounded-lg transition-colors border border-red-200"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatCard
+      {/* 4 Small Boxes - Key Metrics */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <SmallStatBox
           title="Active Headcount"
           value={empStats?.totalEmployees || 0}
-          subtitle={empStats?.pendingCount > 0 ? `${empStats.pendingCount} awaiting review` : "All accounts verified"}
-          gradient="bg-gradient-to-br from-indigo-500 to-purple-600"
-          icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>}
+          badge={empStats?.pendingCount > 0 ? `${empStats.pendingCount} New` : null}
+          subtext="Total onboarded personnel"
+          icon="👥"
         />
-        <StatCard
+        <SmallStatBox
           title="Present Today"
           value={attStats?.present || 0}
-          subtitle={`${attStats?.late || 0} late arrivals`}
-          gradient="bg-gradient-to-br from-emerald-500 to-teal-600"
-          icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+          subtext={`Late Arrivals: ${attStats?.late || 0}`}
+          icon="✓"
         />
-        <StatCard
-          title="Pending Leave Requests"
+        <SmallStatBox
+          title="Pending Leave Claims"
           value={pendingLeaves}
-          subtitle="Awaiting HR review"
-          gradient="bg-gradient-to-br from-amber-500 to-orange-600"
-          icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+          badge={pendingLeaves > 0 ? 'Review' : 'Clear'}
+          subtext="Awaiting manager sign-off"
+          icon="🏖️"
         />
-        <StatCard
-          title="Monthly Payroll"
-          value={payStats?.totalNet ? `₹${(payStats.totalNet / 100000).toFixed(1)}L` : '—'}
-          subtitle={payStats?.employeesProcessed ? `${payStats.employeesProcessed} employees processed` : 'Not processed yet'}
-          gradient="bg-gradient-to-br from-pink-500 to-rose-600"
-          icon={<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+        <SmallStatBox
+          title="Monthly Payroll Disbursal"
+          value={payStats?.totalNet ? formatINR(payStats.totalNet) : '₹0'}
+          subtext={`${payStats?.employeesProcessed || 0} payslips processed`}
+          icon="₹"
         />
       </div>
 
-      {/* Department Breakdown */}
-      {empStats?.departmentStats?.length > 0 && (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-8">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Department Headcount Distribution</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {empStats.departmentStats.map((dept) => (
-              <div key={dept._id || 'unassigned'} className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
-                <p className="text-2xl font-bold text-indigo-600">{dept.count}</p>
-                <p className="text-sm font-medium text-gray-700 mt-1">{dept._id || 'General Staff'}</p>
-              </div>
-            ))}
+      {/* 🚨 Action Required: Structured Responsive Table for Pending Onboarding */}
+      {pendingEmployees.length > 0 && (
+        <div className="bg-white rounded-xl border-2 border-slate-900 shadow-md overflow-hidden">
+          <div className="bg-slate-900 px-4 py-3 text-white flex items-center justify-between">
+            <h2 className="text-xs font-black uppercase tracking-wider flex items-center gap-2">
+              <span className="w-5 h-5 rounded bg-white text-slate-900 flex items-center justify-center text-[11px]">!</span>
+              <span>Pending Sign-Up Applications ({pendingEmployees.length})</span>
+            </h2>
+            <span className="text-[11px] font-black text-slate-300">Requires Authorization</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[600px]">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-wider border-b border-slate-200">
+                  <th className="text-left py-2 px-3.5">Applicant Name</th>
+                  <th className="text-left py-2 px-3.5">Email & Phone</th>
+                  <th className="text-left py-2 px-3.5">Status</th>
+                  <th className="text-right py-2 px-3.5">Governance Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 text-xs font-bold">
+                {pendingEmployees.map((emp) => (
+                  <tr key={emp._id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-2.5 px-3.5 text-slate-900">{emp.name}</td>
+                    <td className="py-2.5 px-3.5 text-slate-600 font-mono">{emp.email} {emp.phone && `· ${emp.phone}` || ''}</td>
+                    <td className="py-2.5 px-3.5">
+                      <span className="px-2 py-0.5 rounded text-[10px] uppercase font-black bg-amber-100 text-amber-900 border border-amber-300">
+                        Pending Approval
+                      </span>
+                    </td>
+                    <td className="py-2.5 px-3.5 text-right space-x-2">
+                      <button
+                        onClick={() => handleApproveEmployee(emp)}
+                        className="px-3 py-1.5 rounded bg-slate-900 hover:bg-slate-800 text-white font-black text-[11px] uppercase transition-all shadow-xs cursor-pointer"
+                      >
+                        ✓ Approve
+                      </button>
+                      <button
+                        onClick={() => handleRejectEmployee(emp)}
+                        className="px-2.5 py-1.5 rounded bg-white hover:bg-slate-100 text-slate-900 border border-slate-300 font-black text-[11px] uppercase transition-all cursor-pointer"
+                      >
+                        Reject
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
 
-      {/* Quick Actions */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Quick Shortcuts</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <a href="/employees" className="flex flex-col items-center gap-2 p-4 rounded-xl bg-indigo-50 hover:bg-indigo-100 transition-colors">
-            <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
-            <span className="text-sm font-medium text-indigo-700">Staff Directory</span>
-          </a>
-          <a href="/attendance" className="flex flex-col items-center gap-2 p-4 rounded-xl bg-emerald-50 hover:bg-emerald-100 transition-colors">
-            <svg className="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" /></svg>
-            <span className="text-sm font-medium text-emerald-700">Attendance Log</span>
-          </a>
-          <a href="/leaves" className="flex flex-col items-center gap-2 p-4 rounded-xl bg-amber-50 hover:bg-amber-100 transition-colors">
-            <svg className="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span className="text-sm font-medium text-amber-700">Review Leaves</span>
-          </a>
-          <a href="/announcements" className="flex flex-col items-center gap-2 p-4 rounded-xl bg-purple-50 hover:bg-purple-100 transition-colors">
-            <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
-            <span className="text-sm font-medium text-purple-700">Post Announcement</span>
-          </a>
+      {/* Structured Department & Shortcut Small Boxes */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Department Distribution */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs">
+          <div className="bg-slate-900 text-white text-xs font-black uppercase px-3.5 py-2 rounded-lg mb-3 flex items-center justify-between">
+            <span>👥 Department Distribution</span>
+            <span>{empStats?.departmentStats?.length || 0} Units</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+            {empStats?.departmentStats?.length > 0 ? (
+              empStats.departmentStats.map((dept) => (
+                <div key={dept._id || 'unassigned'} className="p-3 rounded-lg border border-slate-200/80 bg-slate-50 text-center hover:bg-white transition-all">
+                  <p className="text-xl font-black text-slate-900">{dept.count}</p>
+                  <p className="text-[11px] font-extrabold text-slate-600 uppercase mt-0.5 truncate">{dept._id || 'General'}</p>
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-400 font-bold py-4 col-span-3 text-center">No active department allocations recorded yet.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Management Shortcuts */}
+        <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-2xs">
+          <div className="bg-slate-900 text-white text-xs font-black uppercase px-3.5 py-2 rounded-lg mb-3 flex items-center justify-between">
+            <span>⚡ Executive Shortcuts</span>
+            <span>1-Click Access</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-2 gap-2.5">
+            {[
+              { label: 'Staff Directory', sub: 'Onboard & Salaries', to: '/employees', icon: '👥' },
+              { label: 'Attendance Log', sub: 'Half-Day Cutoffs', to: '/attendance', icon: '📅' },
+              { label: 'Payroll Roll', sub: 'Net Take-Home (₹)', to: '/payroll', icon: '💳' },
+              { label: 'Expense Claims', sub: 'Cloudinary Receipts', to: '/expenses', icon: '📑' },
+            ].map(({ label, sub, to, icon }) => (
+              <a
+                key={to}
+                href={to}
+                className="flex items-center gap-3 p-3 rounded-lg border border-slate-200/80 bg-white hover:bg-slate-900 hover:text-white group transition-all duration-150 shadow-2xs"
+              >
+                <span className="w-8 h-8 rounded-md bg-slate-100 group-hover:bg-white text-slate-900 font-black flex items-center justify-center text-sm shrink-0 transition-colors">
+                  {icon}
+                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-black text-slate-900 group-hover:text-white truncate transition-colors">{label}</p>
+                  <p className="text-[10px] font-bold text-slate-400 group-hover:text-slate-300 truncate transition-colors">{sub}</p>
+                </div>
+              </a>
+            ))}
+          </div>
         </div>
       </div>
     </div>

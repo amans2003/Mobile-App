@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { fetchAnnouncements, createAnnouncement, deleteAnnouncement } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 /**
- * Announcements — Company news & bulletin management
+ * Announcements — Company Feed & News Bulletin Register
+ * Executive small white boxes with sidebar slate-900 header theming and responsive grid layout.
  */
 const Announcements = () => {
+  const { user } = useAuth();
   const [announcements, setAnnouncements] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -14,7 +17,7 @@ const Announcements = () => {
     try {
       setLoading(true);
       const { data } = await fetchAnnouncements();
-      setAnnouncements(data);
+      setAnnouncements(data || []);
     } catch (error) {
       console.error('Error loading announcements:', error);
     } finally {
@@ -32,125 +35,117 @@ const Announcements = () => {
       setShowForm(false);
       loadAnnouncements();
     } catch (error) {
-      alert(error.response?.data?.message || 'Error creating announcement');
+      alert(error.response?.data?.message || 'Error publishing bulletin');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('Delete this announcement?')) {
+    if (window.confirm('Retract and delete this bulletin?')) {
       try {
         await deleteAnnouncement(id);
         loadAnnouncements();
       } catch (error) {
-        alert('Error deleting announcement');
+        alert('Error deleting bulletin');
       }
     }
   };
 
-  const categoryColors = {
-    general: 'bg-blue-100 text-blue-700',
-    policy: 'bg-purple-100 text-purple-700',
-    holiday: 'bg-emerald-100 text-emerald-700',
-    event: 'bg-pink-100 text-pink-700',
-    recognition: 'bg-amber-100 text-amber-700',
-    urgent: 'bg-red-100 text-red-700',
+  const categoryBadge = {
+    general: 'bg-slate-100 text-slate-800 border-slate-300 font-black',
+    policy: 'bg-slate-900 text-white border-slate-950 font-black',
+    holiday: 'bg-emerald-100 text-emerald-950 border-emerald-300 font-black',
+    urgent: 'bg-rose-100 text-rose-950 border-rose-400 font-black animate-pulse',
   };
 
-  const priorityIcons = { low: '🔵', normal: '🟡', high: '🔴' };
-
   return (
-    <div className="p-8">
-      <div className="flex items-center justify-between mb-6">
+    <div className="space-y-4 max-w-7xl mx-auto">
+      {/* Executive Header Box (Sidebar slate-900) */}
+      <div className="bg-slate-900 text-white rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-slate-800">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Announcements</h1>
-          <p className="text-sm text-gray-500">Company news, policies, and bulletin board</p>
+          <h1 className="text-base sm:text-lg font-black tracking-tight uppercase flex items-center gap-2">
+            <span>📢 Enterprise Announcements & Company Bulletin Feed</span>
+          </h1>
+          <p className="text-xs text-slate-300 font-medium mt-0.5">
+            Publish organization-wide notices, holiday reminders, or HR policy directives directly to mobile apps and staff panels.
+          </p>
         </div>
-        <button onClick={() => setShowForm(!showForm)}
-          className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:shadow-lg transition-all">
-          {showForm ? 'Cancel' : '+ New Announcement'}
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="px-4 py-2 rounded-lg bg-white text-slate-900 hover:bg-slate-100 text-xs font-black uppercase transition-all shadow shrink-0 active:scale-95 cursor-pointer"
+        >
+          {showForm ? '✕ Close Form' : '＋ Post Bulletin'}
         </button>
       </div>
 
-      {/* Create Form */}
+      {/* Small Box - Publish Form */}
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 mb-6">
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <input type="text" required value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-            </div>
-            <div className="col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Content</label>
-              <textarea required rows={4} value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+        <form onSubmit={handleCreate} className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3.5 text-xs font-bold">
+          <h3 className="text-xs font-black uppercase text-slate-900 border-b border-slate-100 pb-2">Create New Broadcast Notice</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1">
+              <label className="block mb-1 text-slate-700">Bulletin Title *</label>
+              <input type="text" required placeholder="e.g., Diwali Holiday Schedule" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black text-slate-900" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="general">General</option>
-                <option value="policy">Policy</option>
-                <option value="holiday">Holiday</option>
-                <option value="event">Event</option>
-                <option value="recognition">Recognition</option>
-                <option value="urgent">Urgent</option>
+              <label className="block mb-1 text-slate-700">Category</label>
+              <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black">
+                <option value="general">General Notice</option>
+                <option value="policy">HR Policy Directives</option>
+                <option value="holiday">Holiday Schedule</option>
+                <option value="urgent">Urgent Announcement</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
-              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                <option value="low">Low</option>
+              <label className="block mb-1 text-slate-700">Priority Level</label>
+              <select value={form.priority} onChange={(e) => setForm({ ...form, priority: e.target.value })} className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black">
                 <option value="normal">Normal</option>
-                <option value="high">High</option>
+                <option value="high">High / Urgent</option>
               </select>
             </div>
           </div>
-          <button type="submit"
-            className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-medium rounded-xl hover:shadow-lg transition-all">
-            Publish Announcement
-          </button>
+          <div>
+            <label className="block mb-1 text-slate-700">Detailed Message Content *</label>
+            <textarea required rows={3} placeholder="Write your full message here..." value={form.content} onChange={(e) => setForm({ ...form, content: e.target.value })} className="w-full p-3 rounded-lg border border-slate-300 bg-white font-medium text-slate-800" />
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+            <button type="button" onClick={() => setShowForm(false)} className="px-4 py-2 bg-slate-100 text-slate-700 hover:bg-slate-200 rounded-lg text-xs font-black uppercase cursor-pointer">Cancel</button>
+            <button type="submit" className="px-6 py-2 bg-slate-900 text-white hover:bg-slate-800 rounded-lg text-xs font-black uppercase shadow cursor-pointer">📢 Publish to Mobile & Web</button>
+          </div>
         </form>
       )}
 
-      {/* Announcements List */}
+      {/* Structured Responsive Feed in Small Boxes */}
       {loading ? (
         <div className="flex justify-center py-20">
-          <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
+          <div className="w-8 h-8 border-3 border-slate-300 border-t-slate-900 rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="space-y-4">
-          {announcements.map((ann) => (
-            <div key={ann._id} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span>{priorityIcons[ann.priority]}</span>
-                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-medium ${categoryColors[ann.category]}`}>
-                      {ann.category}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-900">{ann.title}</h3>
-                  <p className="text-sm text-gray-600 mt-2 whitespace-pre-wrap">{ann.content}</p>
-                  <div className="flex items-center gap-3 mt-3 text-xs text-gray-400">
-                    <span>By {ann.author?.name || 'Unknown'}</span>
-                    <span>·</span>
-                    <span>{new Date(ann.publishDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
-                  </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5">
+          {announcements.map((item) => (
+            <div key={item._id} className="bg-white rounded-xl p-4 border border-slate-200 shadow-2xs flex flex-col justify-between hover:border-slate-400 transition-all">
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase font-black border ${categoryBadge[item.category] || 'bg-slate-100 text-slate-800'}`}>
+                    {item.category}
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-400 font-mono">
+                    {new Date(item.createdAt || Date.now()).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
+                  </span>
                 </div>
-                <button onClick={() => handleDelete(ann._id)} className="text-gray-400 hover:text-red-500 transition-colors ml-4">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                  </svg>
+                <h3 className="text-sm font-extrabold text-slate-900 mb-1.5 leading-snug">{item.title}</h3>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed whitespace-pre-wrap">{item.content}</p>
+              </div>
+              <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-100 text-[11px] font-extrabold text-slate-400">
+                <span>By HR Executive</span>
+                <button onClick={() => handleDelete(item._id)} className="text-rose-600 hover:text-rose-800 font-black uppercase text-[11px] cursor-pointer">
+                  Delete
                 </button>
               </div>
             </div>
           ))}
-
           {announcements.length === 0 && (
-            <div className="text-center py-16 text-gray-400 bg-white rounded-2xl border border-gray-100">
-              No announcements yet. Create one!
+            <div className="text-center py-16 text-slate-400 font-extrabold text-xs col-span-3 bg-white rounded-xl border border-slate-200">
+              No active bulletins in the company feed.
             </div>
           )}
         </div>
