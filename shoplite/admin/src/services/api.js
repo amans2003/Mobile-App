@@ -115,6 +115,9 @@ export function fetchAttendanceLogs(params) {
   return apiClient.get('/attendance/logs', { params });
 }
 
+// Alias for fetchAttendanceLogs
+export const fetchAllAttendance = fetchAttendanceLogs;
+
 export function fetchAttendanceStats() {
   return apiClient.get('/attendance/stats');
 }
@@ -129,6 +132,17 @@ export function updateAttendanceRules(data) {
 
 export function updateAttendanceStatus(id, data) {
   return apiClient.put(`/attendance/${id}/status`, data);
+}
+
+// Alias for updateAttendanceStatus
+export const overrideAttendance = updateAttendanceStatus;
+
+export function checkIn(data) {
+  return apiClient.post('/attendance/check-in', data);
+}
+
+export function checkOut(data) {
+  return apiClient.post('/attendance/check-out', data);
 }
 
 // ============================================================
