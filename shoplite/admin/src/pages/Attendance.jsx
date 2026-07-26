@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { fetchAllAttendance, fetchAttendanceStats, checkIn, checkOut, overrideAttendance } from '../services/api';
+import { fetchAllAttendance, fetchAttendanceStats, checkIn, checkOut, overrideAttendance, fetchAttendanceRules, updateAttendanceRules } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
 /**
@@ -28,12 +28,21 @@ const Attendance = () => {
   const loadAttendance = async () => {
     try {
       setLoading(true);
-      const [recordsRes, statsRes] = await Promise.all([
+      const [recordsRes, statsRes, rulesRes] = await Promise.all([
         fetchAllAttendance({ date: dateFilter }).catch(() => ({ data: [] })),
         fetchAttendanceStats().catch(() => ({ data: { present: 0, late: 0, absent: 0, onLeave: 0 } })),
+        fetchAttendanceRules().catch(() => ({ data: null })),
       ]);
       setRecords(recordsRes.data || []);
       setStats(statsRes.data);
+      if (rulesRes.data) {
+        setOfficeTiming({
+          start: rulesRes.data.officeStartTime || '10:00',
+          halfDayCutoff: rulesRes.data.halfDayThreshold || '10:30',
+          earlyLeaveCutoff: rulesRes.data.afternoonThreshold || '14:00',
+          end: rulesRes.data.officeEndTime || '19:00',
+        });
+      }
     } catch (error) {
       console.error('Error loading attendance:', error);
     } finally {
@@ -60,6 +69,20 @@ const Attendance = () => {
       loadAttendance();
     } catch (error) {
       alert(error.response?.data?.message || 'Error recording check-out');
+    }
+  };
+
+  const handleSaveTimings = async () => {
+    try {
+      await updateAttendanceRules({
+        officeStartTime: officeTiming.start,
+        halfDayThreshold: officeTiming.halfDayCutoff,
+        afternoonThreshold: officeTiming.earlyLeaveCutoff,
+        officeEndTime: officeTiming.end,
+      });
+      alert('✅ Custom office working timings & half-day cutoffs saved permanently to server database!');
+    } catch (error) {
+      alert(error.response?.data?.message || 'Error saving custom timings');
     }
   };
 
@@ -148,9 +171,18 @@ const Attendance = () => {
               <input type="time" value={officeTiming.end} onChange={(e) => setOfficeTiming({ ...officeTiming, end: e.target.value })} className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white" />
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 font-bold mt-2.5">
-            💡 Rule Enforcement: Any staff logging check-in after {officeTiming.halfDayCutoff} or leaving prior to {officeTiming.earlyLeaveCutoff} gets assigned <strong>Half-Day (0.5)</strong> attendance value.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100">
+            <p className="text-[11px] text-slate-500 font-bold">
+              💡 Rule Enforcement: Any staff logging check-in after {officeTiming.halfDayCutoff} or leaving prior to {officeTiming.earlyLeaveCutoff} gets assigned <strong>Half-Day (0.5)</strong> attendance value.
+            </p>
+            <button
+              type="button"
+              onClick={handleSaveTimings}
+              className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase transition-all shadow shrink-0 cursor-pointer"
+            >
+              💾 Save Custom Timings
+            </button>
+          </div>
         </div>
       )}
 
