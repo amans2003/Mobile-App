@@ -9,8 +9,13 @@ dotenv.config();
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
-const productRoutes = require('./routes/productRoutes');
-const userRoutes = require('./routes/userRoutes');
+const employeeRoutes = require('./routes/employeeRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const leaveRoutes = require('./routes/leaveRoutes');
+const payrollRoutes = require('./routes/payrollRoutes');
+const expenseRoutes = require('./routes/expenseRoutes');
+const meetingRoutes = require('./routes/meetingRoutes');
+const announcementRoutes = require('./routes/announcementRoutes');
 
 // Initialize Express app
 const app = express();
@@ -35,21 +40,36 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // ============================================================
-// ROUTES
+// ROUTES — Enterprise HRIS API
 // ============================================================
 
+// Auth
 app.use('/api/auth', authRoutes);
-app.use('/auth', authRoutes);
 
-app.use('/api/products', productRoutes);
-app.use('/products', productRoutes);
+// Employee Management & Directory
+app.use('/api/employees', employeeRoutes);
 
-app.use('/api/users', userRoutes);
-app.use('/users', userRoutes);
+// Attendance — Check-In / Check-Out
+app.use('/api/attendance', attendanceRoutes);
+
+// Leave Requests
+app.use('/api/leaves', leaveRoutes);
+
+// Payroll & Salary
+app.use('/api/payroll', payrollRoutes);
+
+// Expense Claims
+app.use('/api/expenses', expenseRoutes);
+
+// Meetings
+app.use('/api/meetings', meetingRoutes);
+
+// Announcements & Company Feed
+app.use('/api/announcements', announcementRoutes);
 
 // Health check endpoint
 app.get('/', (req, res) => {
-  res.json({ message: 'ShopLite API is running' });
+  res.json({ message: 'Enterprise HRIS API is running', version: '2.0.0' });
 });
 
 // ============================================================
@@ -74,6 +94,6 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 5001;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`API URL: http://localhost:${PORT}`);
+  console.log(`🚀 Enterprise HRIS Server running on port ${PORT}`);
+  console.log(`📡 API URL: http://localhost:${PORT}`);
 });

@@ -43,16 +43,16 @@ const storage = multer.diskStorage({
   },
 });
 
-// File filter - allow common image formats
+// File filter - allow images, PDFs, and Word documents
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
+  const allowedTypes = /jpeg|jpg|png|gif|webp|pdf|doc|docx|txt/;
   const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
+  const mimetype = /image|pdf|msword|document|text|octet-stream/.test(file.mimetype) || extname;
 
   if (extname || mimetype) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files are allowed (jpeg, jpg, png, gif, webp)'));
+    cb(new Error('Only images, PDFs, and Word documents are allowed'));
   }
 };
 
@@ -77,7 +77,7 @@ const uploadToCloudinary = async (localPath) => {
 
   try {
     const result = await cloudinary.uploader.upload(localPath, {
-      folder: 'shoplite_products',
+      folder: 'enterprise_hris',
       resource_type: 'auto',
     });
     return { success: true, url: result.secure_url };

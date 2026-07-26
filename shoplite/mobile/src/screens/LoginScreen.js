@@ -15,7 +15,7 @@ import { useTheme } from '../context/ThemeContext';
 import CustomInput from '../components/CustomInput';
 
 /**
- * LoginScreen - User authentication login form with icons and dark mode
+ * LoginScreen - Employee Portal Authentication
  */
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState('');
@@ -33,7 +33,7 @@ const LoginScreen = ({ navigation }) => {
     setPasswordError('');
 
     if (!email.trim()) {
-      setEmailError('Email is required');
+      setEmailError('Company email is required');
       isValid = false;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       setEmailError('Please enter a valid email');
@@ -65,10 +65,10 @@ const LoginScreen = ({ navigation }) => {
           {/* Header Icon & Text */}
           <View style={styles.header}>
             <View style={[styles.iconBox, { backgroundColor: theme.primaryLight }]}>
-              <Ionicons name="key" size={32} color={theme.primary} />
+              <Ionicons name="lock-closed" size={32} color={theme.primary} />
             </View>
-            <Text style={[styles.title, { color: theme.text }]}>Welcome Back</Text>
-            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Log in to continue to your account</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Employee Login</Text>
+            <Text style={[styles.subtitle, { color: theme.textSecondary }]}>Sign in to access attendance, leaves, & payslips</Text>
           </View>
 
           {/* Error Banner */}
@@ -82,10 +82,10 @@ const LoginScreen = ({ navigation }) => {
           {/* Form Fields */}
           <View style={styles.form}>
             <CustomInput
-              label="Email Address"
+              label="Company Email"
               value={email}
               onChangeText={setEmail}
-              placeholder="Enter your email (e.g. user@shop.com)"
+              placeholder="e.g. vikram@company.com"
               keyboardType="email-address"
               error={emailError}
             />
@@ -109,24 +109,24 @@ const LoginScreen = ({ navigation }) => {
               activeOpacity={0.85}
             >
               <Text style={styles.loginBtnText}>
-                {isSubmitting ? 'Logging in...' : 'Log In'}
+                {isSubmitting ? 'Verifying...' : 'Sign In'}
               </Text>
             </TouchableOpacity>
 
-            {/* Quick Admin/User demo hint */}
+            {/* Quick Demo Credentials box */}
             <View style={[styles.demoBox, { backgroundColor: theme.surface, borderColor: theme.border }]}>
               <Ionicons name="information-circle-outline" size={18} color={theme.primary} style={{ marginRight: 6 }} />
               <Text style={[styles.demoText, { color: theme.textSecondary }]}>
-                Demo User: <Text style={{ fontWeight: '700', color: theme.text }}>user@shop.com</Text> / <Text style={{ fontWeight: '700', color: theme.text }}>user123</Text>
+                Demo Employee: <Text style={{ fontWeight: '700', color: theme.text }}>vikram@company.com</Text> / <Text style={{ fontWeight: '700', color: theme.text }}>password123</Text>
               </Text>
             </View>
           </View>
 
           {/* Register Redirect */}
           <View style={styles.footer}>
-            <Text style={[styles.footerText, { color: theme.textSecondary }]}>Don't have an account? </Text>
+            <Text style={[styles.footerText, { color: theme.textSecondary }]}>New team member? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={[styles.registerLink, { color: theme.primary }]}>Sign Up</Text>
+              <Text style={[styles.registerLink, { color: theme.primary }]}>Register Account</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -136,91 +136,23 @@ const LoginScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingTop: 30,
-    paddingBottom: 40,
-  },
-  header: {
-    alignItems: 'flex-start',
-    marginBottom: 28,
-  },
-  iconBox: {
-    width: 60,
-    height: 60,
-    borderRadius: 18,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 30,
-    fontWeight: '800',
-    marginBottom: 6,
-  },
-  subtitle: {
-    fontSize: 15,
-  },
-  errorContainer: {
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  errorBannerText: {
-    fontSize: 13,
-    fontWeight: '600',
-    flex: 1,
-  },
-  form: {
-    marginBottom: 28,
-  },
-  loginBtn: {
-    paddingVertical: 16,
-    borderRadius: 14,
-    alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  loginBtnText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  demoBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    marginTop: 24,
-  },
-  demoText: {
-    fontSize: 13,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 14,
-  },
-  registerLink: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  container: { flex: 1 },
+  keyboardView: { flex: 1 },
+  scrollContent: { paddingHorizontal: 24, paddingTop: 30, paddingBottom: 40 },
+  header: { alignItems: 'flex-start', marginBottom: 28 },
+  iconBox: { width: 60, height: 60, borderRadius: 18, justifyContent: 'center', alignItems: 'center', marginBottom: 16 },
+  title: { fontSize: 30, fontWeight: '800', marginBottom: 6 },
+  subtitle: { fontSize: 15 },
+  errorContainer: { padding: 12, borderRadius: 12, marginBottom: 20, flexDirection: 'row', alignItems: 'center' },
+  errorBannerText: { fontSize: 13, fontWeight: '600', flex: 1 },
+  form: { marginBottom: 28 },
+  loginBtn: { paddingVertical: 16, borderRadius: 14, alignItems: 'center', marginTop: 8, shadowColor: '#2563EB', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 8, elevation: 4 },
+  loginBtnText: { color: '#FFFFFF', fontSize: 16, fontWeight: '700' },
+  demoBox: { flexDirection: 'row', alignItems: 'center', padding: 12, borderRadius: 12, borderWidth: 1, marginTop: 24 },
+  demoText: { fontSize: 13, flex: 1 },
+  footer: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center' },
+  footerText: { fontSize: 14 },
+  registerLink: { fontSize: 14, fontWeight: '700' },
 });
 
 export default LoginScreen;

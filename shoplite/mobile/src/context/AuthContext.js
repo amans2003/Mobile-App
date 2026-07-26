@@ -5,7 +5,8 @@ import { loginUser, registerUser } from '../services/api';
 const AuthContext = createContext();
 
 /**
- * AuthProvider - Manages user authentication state and safe error handling for mobile app
+ * AuthProvider — Enterprise HRIS Mobile Auth
+ * Manages employee authentication state with expanded RBAC fields & pending approval workflow
  * Persists token and user data in AsyncStorage
  */
 export const AuthProvider = ({ children }) => {
@@ -26,7 +27,7 @@ export const AuthProvider = ({ children }) => {
           setUser(JSON.parse(storedUser));
         }
       } catch (err) {
-        console.error('Error loading auth data:', err);
+        console.log('Notice loading auth data:', err?.message);
       } finally {
         setLoading(false);
       }
@@ -55,21 +56,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Register new user with safe error state management
+   * Register new user with pending approval state management
    */
   const register = useCallback(async (name, email, password) => {
     setError(null);
     try {
       const { data } = await registerUser({ name, email, password });
+      // If registration returns pending_approval status, return pending flag without logging in
+      if (data.status === 'pending_approval' || !data.token) {
+        return { success: true, pendingApproval: true, message: data.message };
+      }
+      // Direct login if admin approved or token returned
       await AsyncStorage.setItem('token', data.token);
       await AsyncStorage.setItem('user', JSON.stringify(data));
       setToken(data.token);
       setUser(data);
-      return true;
+      return { success: true, pendingApproval: false };
     } catch (err) {
       const message = err.response?.data?.message || 'Registration failed or email exists.';
       setError(message);
-      return false;
+      return { success: false, message };
     }
   }, []);
 

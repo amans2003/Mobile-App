@@ -1,9 +1,10 @@
-import React from 'react';
-import { View, TextInput, Text, StyleSheet } from 'react-native';
+import React, { useState } from 'react';
+import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/ThemeContext';
 
 /**
- * CustomInput - Reusable text input component with label, error, and theme support
+ * CustomInput - Reusable text input component with label, error, theme, and eye open/close password toggle support
  */
 const CustomInput = ({
   label,
@@ -17,27 +18,47 @@ const CustomInput = ({
   style,
 }) => {
   const { theme } = useTheme();
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+
+  // If secureTextEntry prop is true, only hide text when isPasswordVisible is false
+  const shouldHideText = secureTextEntry && !isPasswordVisible;
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={[styles.label, { color: theme.text }]}>{label}</Text>}
-      <TextInput
+      <View
         style={[
-          styles.input,
+          styles.inputContainer,
           {
             backgroundColor: theme.inputBg,
             borderColor: error ? theme.errorText : theme.border,
-            color: theme.text,
           },
         ]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        placeholderTextColor={theme.textMuted}
-        secureTextEntry={secureTextEntry}
-        keyboardType={keyboardType}
-        autoCapitalize={autoCapitalize}
-      />
+      >
+        <TextInput
+          style={[styles.input, { color: theme.text }]}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={placeholder}
+          placeholderTextColor={theme.textMuted}
+          secureTextEntry={shouldHideText}
+          keyboardType={keyboardType}
+          autoCapitalize={autoCapitalize}
+        />
+        {secureTextEntry && (
+          <TouchableOpacity
+            style={styles.eyeIconBtn}
+            onPress={() => setIsPasswordVisible(!isPasswordVisible)}
+            activeOpacity={0.7}
+          >
+            <Ionicons
+              name={isPasswordVisible ? 'eye-off' : 'eye'}
+              size={22}
+              color={theme.textMuted}
+            />
+          </TouchableOpacity>
+        )}
+      </View>
       {error && <Text style={[styles.errorText, { color: theme.errorText }]}>{error}</Text>}
     </View>
   );
@@ -52,12 +73,24 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginBottom: 8,
   },
-  input: {
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1.5,
     borderRadius: 12,
+    overflow: 'hidden',
+  },
+  input: {
+    flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 15,
+  },
+  eyeIconBtn: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   errorText: {
     fontSize: 12,

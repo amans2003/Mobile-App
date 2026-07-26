@@ -1,16 +1,17 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ProductProvider } from './context/ProductContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 
 // Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-import Products from './pages/Products';
-import AddProduct from './pages/AddProduct';
-import EditProduct from './pages/EditProduct';
-import Users from './pages/Users';
+import Employees from './pages/Employees';
+import Attendance from './pages/Attendance';
+import Leaves from './pages/Leaves';
+import Payroll from './pages/Payroll';
+import Expenses from './pages/Expenses';
+import Announcements from './pages/Announcements';
 
 /**
  * AdminLayout - Wraps authenticated pages with Sidebar
@@ -25,70 +26,25 @@ const AdminLayout = ({ children }) => {
 };
 
 /**
- * App - Main application with routing
+ * App - Enterprise HRIS Admin Portal with routing
  */
 function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <ProductProvider>
-          <Routes>
-            {/* Public Route */}
-            <Route path="/login" element={<Login />} />
+        <Routes>
+          {/* Public Route */}
+          <Route path="/login" element={<Login />} />
 
-            {/* Protected Routes */}
-            <Route
-              path="/"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <Dashboard />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <Products />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products/add"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <AddProduct />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/products/edit/:id"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <EditProduct />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/users"
-              element={
-                <ProtectedRoute>
-                  <AdminLayout>
-                    <Users />
-                  </AdminLayout>
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </ProductProvider>
+          {/* Protected Routes */}
+          <Route path="/" element={<ProtectedRoute><AdminLayout><Dashboard /></AdminLayout></ProtectedRoute>} />
+          <Route path="/employees" element={<ProtectedRoute><AdminLayout><Employees /></AdminLayout></ProtectedRoute>} />
+          <Route path="/attendance" element={<ProtectedRoute><AdminLayout><Attendance /></AdminLayout></ProtectedRoute>} />
+          <Route path="/leaves" element={<ProtectedRoute><AdminLayout><Leaves /></AdminLayout></ProtectedRoute>} />
+          <Route path="/payroll" element={<ProtectedRoute><AdminLayout><Payroll /></AdminLayout></ProtectedRoute>} />
+          <Route path="/expenses" element={<ProtectedRoute><AdminLayout><Expenses /></AdminLayout></ProtectedRoute>} />
+          <Route path="/announcements" element={<ProtectedRoute><AdminLayout><Announcements /></AdminLayout></ProtectedRoute>} />
+        </Routes>
       </AuthProvider>
     </BrowserRouter>
   );

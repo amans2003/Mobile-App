@@ -4,8 +4,9 @@ import { loginAdmin } from '../services/api';
 const AuthContext = createContext();
 
 /**
- * AuthProvider - Manages admin authentication state
+ * AuthProvider - Manages Admin & HR authentication state
  * Stores token and user data in localStorage
+ * Strictly restricted to two portal roles: Super Admin and HR Manager
  */
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -26,16 +27,17 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Login admin user
+   * Login admin/HR user
    * @param {string} email
    * @param {string} password
    */
   const login = async (email, password) => {
     const { data } = await loginAdmin({ email, password });
 
-    // Verify user has admin role
-    if (data.role !== 'admin') {
-      throw new Error('Access denied. Admin only.');
+    // Strictly authorize ONLY two dashboard roles: Admin and HR Manager
+    const allowedRoles = ['super_admin', 'hr_manager'];
+    if (!allowedRoles.includes(data.role)) {
+      throw new Error('Access denied. Web portal access is strictly restricted to Admin and HR Managers.');
     }
 
     // Store token and user data
@@ -46,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Logout admin user
+   * Logout user
    */
   const logout = () => {
     localStorage.removeItem('token');
@@ -55,8 +57,15 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  /**
+   * Check if user has one of the required roles
+   */
+  const hasRole = (...roles) => {
+    return user && roles.includes(user.role);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, token, loading, login, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );
