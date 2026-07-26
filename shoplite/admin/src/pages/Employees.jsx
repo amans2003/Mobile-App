@@ -282,7 +282,7 @@ const Employees = () => {
                     <td className="py-3 px-4">
                       <p className="text-xs font-extrabold text-slate-900">{emp.department || 'General'} ({emp.designation || 'Staff'})</p>
                       <span className="inline-block mt-1 px-2.5 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-300 text-[11px] font-black">
-                        🏖️ Quota: {emp.leaveBalances?.pto || 20} PTO / {emp.leaveBalances?.sick || 10} Sick
+                        🏖️ Quota: {emp.leaveBalances?.pto ?? 20} PTO / {emp.leaveBalances?.sick ?? 10} Sick / {emp.leaveBalances?.casual ?? 7} Casual
                       </span>
                     </td>
                     <td className="py-3 px-4 space-y-1">
