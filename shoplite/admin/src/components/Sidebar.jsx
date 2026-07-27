@@ -52,8 +52,8 @@ const Sidebar = ({ isOpen, onClose }) => {
         <div className="px-5 py-4 border-b border-slate-800 flex items-center justify-between">
           <div>
             <h1 className="text-base font-black text-white uppercase tracking-wider flex items-center gap-2">
-              <span className="w-6 h-6 rounded bg-white text-slate-900 flex items-center justify-center font-black text-xs">E</span>
-              <span>Enterprise HRIS</span>
+              <span className="w-6 h-6 rounded bg-emerald-500 text-slate-950 flex items-center justify-center font-black text-xs">W</span>
+              <span>WorkPulse HRMS</span>
             </h1>
             <p className="text-[10px] text-slate-400 mt-0.5 font-bold uppercase tracking-widest">Admin & HR Suite</p>
           </div>

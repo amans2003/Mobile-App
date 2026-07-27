@@ -31,14 +31,14 @@ const SplashScreen = ({ navigation }) => {
         {/* Brand Logo / Icon */}
         <View style={[styles.logoContainer, { backgroundColor: theme.surface, borderColor: theme.border }]}>
           <View style={[styles.logoIconBg, { backgroundColor: theme.primaryLight }]}>
-            <Ionicons name="bag-handle" size={54} color={theme.primary} />
+            <Ionicons name="people-circle" size={54} color={theme.primary} />
           </View>
         </View>
         <Text style={[styles.title, { color: theme.text }]}>
-          <Text style={styles.titleHighlight}>Shop</Text>Lite
+          <Text style={styles.titleHighlight}>Work</Text>Pulse HR
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Your premium destination for modern online shopping. Clean, fast, and secure.
+          Enterprise workforce attendance, pro-rata payroll, leave quotas & team shift governance.
         </Text>
       </View>
 
