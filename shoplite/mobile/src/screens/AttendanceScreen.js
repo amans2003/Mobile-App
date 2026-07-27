@@ -112,11 +112,6 @@ const AttendanceScreen = () => {
   const isCheckedIn = !!today?.checkIn?.time;
   const isCheckedOut = !!today?.checkOut?.time;
 
-  const statusColors = {
-    present: '#10b981', late: '#f59e0b', absent: '#ef4444',
-    half_day: '#f97316', on_leave: '#3b82f6',
-  };
-
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: theme.background },
     header: { paddingHorizontal: 20, paddingTop: 60, paddingBottom: 16 },
