@@ -162,6 +162,35 @@ const Attendance = () => {
     absent: { label: '🔴 Absent', style: 'bg-rose-100 text-rose-950 border-rose-300 font-black' },
   };
 
+  const handleExportCSV = () => {
+    const headers = ['Employee Name', 'Employee ID', 'Department', 'Date', 'Check-In Time', 'Check-Out Time', 'Worked Hours', 'Attendance Status', 'Notes / Reason'];
+    const rows = records.map(r => [
+      r.employee?.name || 'Staff Member',
+      r.employee?.employeeId || 'STAFF',
+      r.employee?.department || 'General',
+      r.date || dateFilter,
+      r.checkIn ? new Date(r.checkIn).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+      r.checkOut ? new Date(r.checkOut).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '--',
+      r.workHours ? `${r.workHours} hrs` : '--',
+      r.status?.toUpperCase() || 'PRESENT',
+      r.overrideNotes || r.notes || r.manualReason || 'Normal Entry',
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Attendance_Register_${dateFilter}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="space-y-4 max-w-7xl mx-auto">
       {/* Executive Header Box (Sidebar slate-900) */}
@@ -174,7 +203,13 @@ const Attendance = () => {
             Shift: {officeTiming.start}–{officeTiming.end} · Half-Day Cutoff: {officeTiming.halfDayCutoff} · Half-Day Hours: {officeTiming.halfDayWorkingHours}h
           </p>
         </div>
-        <div className="flex gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <button
+            onClick={handleExportCSV}
+            className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase transition-all shadow cursor-pointer flex items-center gap-1"
+          >
+            <span>📥 Export Excel</span>
+          </button>
           <button
             onClick={() => setShowConfig(!showConfig)}
             className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-black uppercase transition-all shadow cursor-pointer"

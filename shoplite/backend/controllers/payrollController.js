@@ -11,15 +11,26 @@ const { calculateEmployeePayroll, validateDeductionAmount } = require('../utils/
  */
 const generatePayroll = async (req, res) => {
   try {
-    const { month, year } = req.body;
+    const { month, year, workingDays: customWorkingDays } = req.body;
 
     if (!month || !year) {
       return res.status(400).json({ message: 'Month and year are required' });
     }
 
     // Fetch configured attendance timings and working days rule
-    const rule = await AttendanceRule.findOne({ ruleId: 'default' });
-    const workingDays = rule && rule.workingDaysPerMonth ? rule.workingDaysPerMonth : 26;
+    let rule = await AttendanceRule.findOne({ ruleId: 'default' });
+    if (!rule) {
+      rule = await AttendanceRule.create({ ruleId: 'default' });
+    }
+
+    const workingDays = customWorkingDays && Number(customWorkingDays) > 0
+      ? Number(customWorkingDays)
+      : (rule.workingDaysPerMonth || 26);
+
+    if (customWorkingDays && Number(customWorkingDays) > 0) {
+      rule.workingDaysPerMonth = Number(customWorkingDays);
+      await rule.save();
+    }
 
     // Get all active employees
     const employees = await User.find({ status: 'active' });

@@ -12,6 +12,7 @@ const Payroll = () => {
   const [loading, setLoading] = useState(true);
   const [month, setMonth] = useState(new Date().getMonth() + 1);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [customDays, setCustomDays] = useState(26);
   const [payStats, setPayStats] = useState(null);
   const [payrollMap, setPayrollMap] = useState({});
   const [generating, setGenerating] = useState(false);
@@ -33,6 +34,12 @@ const Payroll = () => {
         if (empId) map[empId] = r;
       });
       setPayrollMap(map);
+
+      // If any record exists with recorded workingDays, sync customDays state
+      const firstRec = (recRes.data || [])[0];
+      if (firstRec && firstRec.workingDays) {
+        setCustomDays(firstRec.workingDays);
+      }
     } catch (error) {
       console.error('Error loading payroll data:', error);
     } finally {
@@ -48,15 +55,60 @@ const Payroll = () => {
     try {
       setGenerating(true);
       for (const emp of employees) {
-        await generatePayroll({ employeeId: emp._id, month, year }).catch(e => console.log(e?.message));
+        await generatePayroll({ employeeId: emp._id, month, year, workingDays: customDays }).catch(e => console.log(e?.message));
       }
-      alert(`✅ Monthly payroll roll processed for ${month}/${year}! All half-days (0.5x) and attendance absences factored into net take-home pay.`);
+      alert(`✅ Monthly payroll processed for ${month}/${year} with ${customDays} working days! Net take-home amounts updated.`);
       loadData();
     } catch (error) {
       alert('Error during batch salary processing');
     } finally {
       setGenerating(false);
     }
+  };
+
+  const handleExportCSV = () => {
+    const headers = ['Staff Name', 'Employee ID', 'Department', 'Gross Package (INR)', 'Working Days', 'Present Score (Days)', 'Unpaid Days', 'Attendance Deduction (INR)', 'Tax & PF (INR)', 'Final Net Take-Home (INR)'];
+    const rows = employees.map(emp => {
+      const s = emp.salary || {};
+      const d = s.deductions || {};
+      const empGross = Number(s.basic || 0) + Number(s.hra || 0) + Number(s.transport || 0) + Number(s.medical || 0) + Number(s.special || 0);
+      const empDeductions = Number(d.tax || 0) + Number(d.insurance || 0) + Number(d.providentFund || 0);
+      const rec = payrollMap[emp._id];
+      const wDays = rec ? rec.workingDays : customDays;
+      const perDayRate = wDays > 0 ? empGross / wDays : 0;
+      const presentDays = rec ? rec.presentDays : (emp.presentDays ?? wDays);
+      const unpaidDays = rec ? (rec.unpaidLeaveDays || 0) : Math.max(0, wDays - presentDays);
+      const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : Math.round(unpaidDays * perDayRate);
+      const proRatedTaxPf = Math.round(empDeductions * (wDays > 0 ? Math.min(1, presentDays / wDays) : 1));
+      const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - proRatedTaxPf - attendanceDeduction);
+
+      return [
+        emp.name,
+        emp.employeeId || 'STAFF',
+        emp.department || 'General',
+        empGross,
+        wDays,
+        presentDays,
+        unpaidDays,
+        attendanceDeduction,
+        proRatedTaxPf,
+        finalTakeHome,
+      ];
+    });
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Payroll_Register_${month}_${year}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const calculateTotalGross = () => {
@@ -91,14 +143,28 @@ const Payroll = () => {
             <span>💳 Enterprise Payroll & Pro-Rata Salary Disbursement</span>
           </h1>
           <p className="text-xs text-slate-300 font-medium mt-0.5">
-            Transparent breakdown of gross pay, present days vs half-day deductions (after 10:30am/2pm), and exact employee net take-home amounts.
+            Configured Working Days: {customDays} Days/Month. All half-days (0.5x) and absences automatically calculated.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
+          <div className="flex items-center bg-white px-2.5 py-1.5 rounded-lg text-xs font-black text-slate-900 border border-slate-300 shadow">
+            <span className="text-[10px] text-slate-500 uppercase mr-1.5 font-bold">Working Days:</span>
+            <input
+              type="number"
+              min="1"
+              max="31"
+              value={customDays}
+              onChange={(e) => setCustomDays(Number(e.target.value))}
+              className="w-10 bg-transparent text-center font-black focus:outline-none"
+            />
+          </div>
           <select value={month} onChange={(e) => setMonth(Number(e.target.value))} className="px-3 py-1.5 rounded-lg bg-white text-slate-900 text-xs font-black shadow focus:outline-none cursor-pointer">
             {Array.from({ length: 12 }, (_, i) => (<option key={i + 1} value={i + 1}>{new Date(2000, i).toLocaleString('en', { month: 'short' })}</option>))}
           </select>
           <input type="number" value={year} onChange={(e) => setYear(Number(e.target.value))} className="w-20 px-3 py-1.5 rounded-lg bg-white text-slate-900 text-xs font-black shadow focus:outline-none" />
+          <button onClick={handleExportCSV} className="px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase transition-all shadow cursor-pointer flex items-center gap-1">
+            <span>📥 Export Excel</span>
+          </button>
           <button onClick={handleProcessAll} disabled={generating || loading} className="px-3.5 py-2 rounded-lg bg-white text-slate-900 hover:bg-slate-100 text-xs font-black uppercase transition-all shadow shrink-0 cursor-pointer disabled:opacity-50">
             {generating ? 'Processing...' : '⚡ Process Payroll'}
           </button>
