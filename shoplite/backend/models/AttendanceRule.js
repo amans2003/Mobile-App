@@ -27,6 +27,15 @@ const attendanceRuleSchema = new mongoose.Schema(
       type: String,
       default: '19:00', // standard 7:00 PM check-out
     },
+    halfDayWorkingHours: {
+      type: Number,
+      default: 4.5, // auto-calculated (total shift hours / 2) or editable
+    },
+    customDeductionAmount: {
+      type: Number,
+      default: 0, // non-negative attendance deduction per day
+      min: [0, 'Attendance deduction cannot be negative.'],
+    },
     workingDaysPerMonth: {
       type: Number,
       default: 26, // standard monthly working days for salary calculation

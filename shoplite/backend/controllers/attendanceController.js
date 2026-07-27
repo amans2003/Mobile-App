@@ -1,5 +1,13 @@
 const Attendance = require('../models/Attendance');
 const AttendanceRule = require('../models/AttendanceRule');
+const {
+  parseTimeToDecimal,
+  formatDecimalToHoursMinutes,
+  calculateWorkingHours,
+  calculateHalfDayWorkingHours,
+  validateShiftSettings,
+  evaluateAttendance,
+} = require('../utils/attendanceCalculator');
 
 /**
  * Get today's date string in YYYY-MM-DD format
@@ -26,9 +34,6 @@ const checkIn = async (req, res) => {
     }
 
     const now = new Date();
-    const checkInHour = now.getHours();
-    const checkInMinute = now.getMinutes();
-    const currentDecimalHour = checkInHour + checkInMinute / 60.0;
 
     // Fetch customized office timing rules
     let rule = await AttendanceRule.findOne({ ruleId: 'default' });
@@ -36,18 +41,11 @@ const checkIn = async (req, res) => {
       rule = await AttendanceRule.create({ ruleId: 'default' });
     }
 
-    // Parse thresholds (e.g. '10:30' -> 10.5, '14:00' -> 14.0)
-    const [hdHour, hdMin] = (rule.halfDayThreshold || '10:30').split(':').map(Number);
-    const halfDayCutoff = (hdHour || 10) + (hdMin || 30) / 60.0;
-
-    let autoStatus = 'present';
-    let autoNote = `On Time Check-In (Office Starts: ${rule.officeStartTime || '10:00 AM'})`;
-
-    // Rule: if arrival after 10:30 AM (or afternoon after 2:00 PM), automatically count as Half Day
-    if (rule.autoCalculateHalfDay !== false && currentDecimalHour > halfDayCutoff) {
-      autoStatus = 'half_day';
-      autoNote = `Automatic Half-Day: Checked in after ${rule.halfDayThreshold} cutoff (${String(checkInHour).padStart(2, '0')}:${String(checkInMinute).padStart(2, '0')})`;
-    }
+    const evalResult = evaluateAttendance({
+      checkInDate: now,
+      checkOutDate: null,
+      rule,
+    });
 
     if (!record) {
       record = new Attendance({
@@ -58,8 +56,8 @@ const checkIn = async (req, res) => {
           location: { latitude: latitude || null, longitude: longitude || null },
           selfieUrl: selfieUrl || '',
         },
-        status: autoStatus,
-        notes: autoNote,
+        status: evalResult.status,
+        notes: evalResult.notes,
       });
     } else {
       record.checkIn = {
@@ -68,8 +66,8 @@ const checkIn = async (req, res) => {
         selfieUrl: selfieUrl || '',
       };
       if (!record.isManuallyEdited) {
-        record.status = autoStatus;
-        record.notes = autoNote;
+        record.status = evalResult.status;
+        record.notes = evalResult.notes;
       }
     }
 
@@ -109,7 +107,7 @@ const checkOut = async (req, res) => {
 
     // Calculate work hours
     const diffMs = now - new Date(record.checkIn.time);
-    const diffHours = Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100;
+    const diffHours = Math.max(0, Math.round((diffMs / (1000 * 60 * 60)) * 100) / 100);
     record.workHours = diffHours;
 
     // Calculate overtime (anything beyond 8 hours)
@@ -117,16 +115,22 @@ const checkOut = async (req, res) => {
       record.overtime = Math.round((diffHours - 8) * 100) / 100;
     }
 
-    // Status evaluation upon check-out based on completed work hours
+    // Fetch rule for shift & half-day hours evaluation
+    let rule = await AttendanceRule.findOne({ ruleId: 'default' });
+    if (!rule) {
+      rule = await AttendanceRule.create({ ruleId: 'default' });
+    }
+
+    const evalResult = evaluateAttendance({
+      checkInDate: record.checkIn.time,
+      checkOutDate: now,
+      rule,
+    });
+
+    // Status evaluation upon check-out based on completed work hours & rules
     if (!record.isManuallyEdited && !record.notes?.includes('Approved Half-Day')) {
-      if (diffHours < 4.5) {
-        record.status = 'half_day';
-        record.notes = `Automatic Half-Day: Early departure after only ${diffHours} hours`;
-      } else {
-        // Employee completed full time work (>= 4.5 hours) -> status is Present!
-        record.status = 'present';
-        record.notes = `Full Day Work Completed (${diffHours} hours worked)`;
-      }
+      record.status = evalResult.status;
+      record.notes = evalResult.notes;
     }
 
     await record.save();
@@ -162,7 +166,35 @@ const getAttendanceRules = async (req, res) => {
  */
 const updateAttendanceRules = async (req, res) => {
   try {
-    const { officeStartTime, halfDayThreshold, afternoonThreshold, officeEndTime, workingDaysPerMonth, autoCalculateHalfDay } = req.body;
+    const {
+      officeStartTime,
+      halfDayThreshold,
+      afternoonThreshold,
+      officeEndTime,
+      halfDayWorkingHours,
+      customDeductionAmount,
+      workingDaysPerMonth,
+      autoCalculateHalfDay,
+    } = req.body;
+
+    // Rule 10 & Rule 14 Validations
+    if (customDeductionAmount !== undefined && customDeductionAmount !== null) {
+      if (Number(customDeductionAmount) < 0) {
+        return res.status(400).json({ message: 'Attendance deduction cannot be negative.' });
+      }
+    }
+
+    const validation = validateShiftSettings({
+      officeStartTime: officeStartTime || '09:00',
+      officeEndTime: officeEndTime || '18:00',
+      halfDayThreshold: halfDayThreshold || '13:00',
+      halfDayWorkingHours: halfDayWorkingHours !== undefined ? Number(halfDayWorkingHours) : undefined,
+      customDeductionAmount: customDeductionAmount !== undefined ? Number(customDeductionAmount) : undefined,
+    });
+
+    if (!validation.isValid) {
+      return res.status(400).json({ message: validation.errors[0] || 'Invalid shift parameters' });
+    }
 
     let rule = await AttendanceRule.findOne({ ruleId: 'default' });
     if (!rule) {
@@ -173,12 +205,14 @@ const updateAttendanceRules = async (req, res) => {
     if (halfDayThreshold !== undefined) rule.halfDayThreshold = halfDayThreshold;
     if (afternoonThreshold !== undefined) rule.afternoonThreshold = afternoonThreshold;
     if (officeEndTime !== undefined) rule.officeEndTime = officeEndTime;
+    if (halfDayWorkingHours !== undefined) rule.halfDayWorkingHours = Number(halfDayWorkingHours);
+    if (customDeductionAmount !== undefined) rule.customDeductionAmount = Number(customDeductionAmount);
     if (workingDaysPerMonth !== undefined) rule.workingDaysPerMonth = Number(workingDaysPerMonth);
     if (autoCalculateHalfDay !== undefined) rule.autoCalculateHalfDay = Boolean(autoCalculateHalfDay);
     rule.updatedBy = req.user._id;
 
     await rule.save();
-    res.json({ message: 'Custom attendance office timings updated successfully!', rule });
+    res.json({ message: 'Custom shift settings and half-day rules updated successfully!', rule });
   } catch (error) {
     console.error('Update attendance rules error:', error.message);
     res.status(500).json({ message: 'Server error updating attendance rules' });

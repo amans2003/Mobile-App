@@ -138,6 +138,24 @@ const AttendanceScreen = () => {
     statusBadgeText: { fontSize: 10, fontWeight: '700', color: '#fff' },
   });
 
+  const statusColors = {
+    present: '#10b981',
+    late: '#10b981',
+    half_day: '#f59e0b',
+    on_leave: '#3b82f6',
+    unpaid_leave: '#8b5cf6',
+    absent: '#ef4444',
+  };
+
+  const statusLabels = {
+    present: '🟢 PRESENT',
+    late: '🟢 PRESENT',
+    half_day: '🟡 HALF DAY',
+    on_leave: '🔵 PAID LEAVE',
+    unpaid_leave: '🟣 APPROVED LEAVE',
+    absent: '🔴 ABSENT',
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -189,6 +207,7 @@ const AttendanceScreen = () => {
           </TouchableOpacity>
         )}
       </View>
+
       {/* History */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent History</Text>
@@ -205,7 +224,7 @@ const AttendanceScreen = () => {
             <View style={{ alignItems: 'flex-end', gap: 4 }}>
               <Text style={styles.historyHours}>{record.workHours ? `${record.workHours}h` : '—'}</Text>
               <View style={[styles.statusBadge, { backgroundColor: statusColors[record.status] || '#9ca3af' }]}>
-                <Text style={styles.statusBadgeText}>{record.status?.replace('_', ' ').toUpperCase() || 'LOGGED'}</Text>
+                <Text style={styles.statusBadgeText}>{statusLabels[record.status] || record.status?.replace('_', ' ').toUpperCase() || 'LOGGED'}</Text>
               </View>
             </View>
           </View>

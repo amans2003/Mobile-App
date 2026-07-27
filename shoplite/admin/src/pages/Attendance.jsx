@@ -13,17 +13,49 @@ const Attendance = () => {
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState(new Date().toISOString().split('T')[0]);
 
-  // Office Timing Customization state
+  // Office Timing Customization state with live auto-calculation & deduction settings
   const [officeTiming, setOfficeTiming] = useState({
-    start: '10:00',
-    halfDayCutoff: '10:30',
-    earlyLeaveCutoff: '14:00',
-    end: '19:00',
+    start: '09:00',
+    halfDayCutoff: '13:00',
+    end: '18:00',
+    halfDayWorkingHours: 4.5,
+    customDeductionAmount: 0,
   });
   const [showConfig, setShowConfig] = useState(false);
 
   // HR Override modal state
   const [overrideModal, setOverrideModal] = useState({ show: false, record: null, status: 'half_day', notes: '' });
+
+  const parseTimeToDec = (tStr) => {
+    if (!tStr) return 0;
+    const [h, m] = String(tStr).split(':').map(Number);
+    return (h || 0) + (m || 0) / 60.0;
+  };
+
+  const calcShiftTotalHours = (start, end) => {
+    const s = parseTimeToDec(start);
+    let e = parseTimeToDec(end);
+    if (e < s) e += 24;
+    return Math.max(0, Math.round((e - s) * 100) / 100);
+  };
+
+  const formatDecToText = (dec) => {
+    if (isNaN(dec) || dec <= 0) return '0 Hours';
+    const hrs = Math.floor(dec);
+    const mins = Math.round((dec - hrs) * 60);
+    if (hrs > 0 && mins > 0) return `${hrs} Hours ${mins} Mins`;
+    if (hrs > 0) return `${hrs} Hours`;
+    return `${mins} Mins`;
+  };
+
+  const handleTimingChange = (field, value) => {
+    const updated = { ...officeTiming, [field]: value };
+    if (field === 'start' || field === 'end') {
+      const tot = calcShiftTotalHours(updated.start, updated.end);
+      updated.halfDayWorkingHours = Math.round((tot / 2) * 100) / 100;
+    }
+    setOfficeTiming(updated);
+  };
 
   const loadAttendance = async () => {
     try {
@@ -36,11 +68,15 @@ const Attendance = () => {
       setRecords(recordsRes.data || []);
       setStats(statsRes.data);
       if (rulesRes.data) {
+        const start = rulesRes.data.officeStartTime || '09:00';
+        const end = rulesRes.data.officeEndTime || '18:00';
+        const tot = calcShiftTotalHours(start, end);
         setOfficeTiming({
-          start: rulesRes.data.officeStartTime || '10:00',
-          halfDayCutoff: rulesRes.data.halfDayThreshold || '10:30',
-          earlyLeaveCutoff: rulesRes.data.afternoonThreshold || '14:00',
-          end: rulesRes.data.officeEndTime || '19:00',
+          start,
+          halfDayCutoff: rulesRes.data.halfDayThreshold || '13:00',
+          end,
+          halfDayWorkingHours: rulesRes.data.halfDayWorkingHours ?? (tot / 2),
+          customDeductionAmount: rulesRes.data.customDeductionAmount || 0,
         });
       }
     } catch (error) {
@@ -73,16 +109,21 @@ const Attendance = () => {
   };
 
   const handleSaveTimings = async () => {
+    if (Number(officeTiming.customDeductionAmount) < 0) {
+      alert('❌ Attendance deduction cannot be negative.');
+      return;
+    }
     try {
       await updateAttendanceRules({
         officeStartTime: officeTiming.start,
         halfDayThreshold: officeTiming.halfDayCutoff,
-        afternoonThreshold: officeTiming.earlyLeaveCutoff,
         officeEndTime: officeTiming.end,
+        halfDayWorkingHours: Number(officeTiming.halfDayWorkingHours),
+        customDeductionAmount: Number(officeTiming.customDeductionAmount),
       });
-      alert('✅ Custom office working timings & half-day cutoffs saved permanently to server database!');
+      alert('✅ Shift settings, half-day working hours & deduction policy saved successfully!');
     } catch (error) {
-      alert(error.response?.data?.message || 'Error saving custom timings');
+      alert(error.response?.data?.message || 'Error saving shift settings');
     }
   };
 
@@ -110,12 +151,13 @@ const Attendance = () => {
     return dt.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
   };
 
-  const statusStyle = {
-    present: 'bg-emerald-100 text-emerald-950 border-emerald-300 font-black',
-    late: 'bg-amber-100 text-amber-950 border-amber-300 font-black',
-    half_day: 'bg-orange-100 text-orange-950 border-orange-400 font-black',
-    absent: 'bg-rose-100 text-rose-950 border-rose-300 font-black',
-    on_leave: 'bg-blue-100 text-blue-900 border-blue-300 font-black',
+  const statusBadge = {
+    present: { label: '🟢 Present', style: 'bg-emerald-100 text-emerald-950 border-emerald-300 font-black' },
+    late: { label: '🟢 Present (Late)', style: 'bg-emerald-100 text-emerald-950 border-emerald-300 font-black' },
+    half_day: { label: '🟡 Half Day', style: 'bg-amber-100 text-amber-950 border-amber-400 font-black' },
+    on_leave: { label: '🔵 Paid Leave', style: 'bg-blue-100 text-blue-900 border-blue-300 font-black' },
+    unpaid_leave: { label: '🟣 Approved Leave', style: 'bg-purple-100 text-purple-950 border-purple-300 font-black' },
+    absent: { label: '🔴 Absent', style: 'bg-rose-100 text-rose-950 border-rose-300 font-black' },
   };
 
   return (
@@ -124,10 +166,10 @@ const Attendance = () => {
       <div className="bg-slate-900 text-white rounded-xl px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md border border-slate-800">
         <div>
           <h1 className="text-base sm:text-lg font-black tracking-tight uppercase flex items-center gap-2">
-            <span>📅 Attendance & Half-Day Governance Register</span>
+            <span>📅 Attendance & Shift Governance Register</span>
           </h1>
           <p className="text-xs text-slate-300 font-medium mt-0.5">
-            Office hours {officeTiming.start}–{officeTiming.end}. Arrival after {officeTiming.halfDayCutoff} or departure before {officeTiming.earlyLeaveCutoff} triggers Half-Day (0.5x pro-rata salary).
+            Shift: {officeTiming.start}–{officeTiming.end} · Half-Day Cutoff: {officeTiming.halfDayCutoff} · Half-Day Hours: {officeTiming.halfDayWorkingHours}h
           </p>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -135,7 +177,7 @@ const Attendance = () => {
             onClick={() => setShowConfig(!showConfig)}
             className="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-white border border-slate-700 text-xs font-black uppercase transition-all shadow cursor-pointer"
           >
-            ⚙️ Timing Config
+            ⚙️ Shift Settings
           </button>
           <input
             type="date"
@@ -146,42 +188,127 @@ const Attendance = () => {
         </div>
       </div>
 
-      {/* Customizable Office Timing Small Box */}
+      {/* Redesigned Responsive Shift Settings Card */}
       {showConfig && (
-        <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-2xs">
-          <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-2">
-            <h3 className="text-xs font-black uppercase text-slate-900 tracking-wider">⚙️ Custom Office Working & Cutoff Parameters</h3>
-            <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-300">AUTO-APPLIED TO SALARY CALCULATION</span>
+        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-md space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+            <h3 className="text-xs font-black uppercase text-slate-900 tracking-wider flex items-center gap-1.5">
+              <span>⚙️ Shift Timings & Attendance Policy Config</span>
+            </h3>
+            <span className="text-[10px] font-extrabold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded border border-emerald-300">
+              ⚡ LIVE AUTO-CALCULATED
+            </span>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs font-bold">
-            <div>
-              <label className="block mb-1 text-slate-700 text-[11px] uppercase">Shift Start Time</label>
-              <input type="time" value={officeTiming.start} onChange={(e) => setOfficeTiming({ ...officeTiming, start: e.target.value })} className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white" />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {/* Column 1: Config Form Inputs */}
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3 text-xs font-bold">
+                <div>
+                  <label className="block mb-1 text-slate-700 text-[11px] uppercase font-extrabold">1. Shift Start Time</label>
+                  <input
+                    type="time"
+                    value={officeTiming.start}
+                    onChange={(e) => handleTimingChange('start', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black text-slate-900 focus:ring-2 focus:ring-slate-900"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">Official reporting time</p>
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-700 text-[11px] uppercase font-extrabold">2. Shift End Time</label>
+                  <input
+                    type="time"
+                    value={officeTiming.end}
+                    onChange={(e) => handleTimingChange('end', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black text-slate-900 focus:ring-2 focus:ring-slate-900"
+                  />
+                  <p className="text-[10px] text-slate-400 mt-0.5">Official checkout time</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs font-bold">
+                <div>
+                  <label className="block mb-1 text-amber-900 text-[11px] uppercase font-extrabold">3. Half-Day Arrival Cutoff</label>
+                  <input
+                    type="time"
+                    value={officeTiming.halfDayCutoff}
+                    onChange={(e) => handleTimingChange('halfDayCutoff', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-amber-300 bg-amber-50/50 font-black text-amber-950 focus:ring-2 focus:ring-amber-500"
+                  />
+                  <p className="text-[10px] text-amber-800 mt-0.5">Arrival after cutoff = Half Day</p>
+                </div>
+                <div>
+                  <label className="block mb-1 text-slate-700 text-[11px] uppercase font-extrabold">4. Half-Day Working Hours</label>
+                  <input
+                    type="number"
+                    step="0.1"
+                    min="0"
+                    value={officeTiming.halfDayWorkingHours}
+                    onChange={(e) => handleTimingChange('halfDayWorkingHours', e.target.value)}
+                    className="w-full px-3 py-2 rounded-lg border border-slate-300 bg-white font-black text-indigo-900 focus:ring-2 focus:ring-indigo-500"
+                  />
+                  <p className="text-[10px] text-indigo-700 mt-0.5">Auto-calculated (Shift / 2) & Editable</p>
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1 text-rose-900 text-[11px] uppercase font-extrabold">5. Attendance Deduction (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={officeTiming.customDeductionAmount}
+                  onChange={(e) => handleTimingChange('customDeductionAmount', e.target.value)}
+                  placeholder="0 (Or custom daily deduction)"
+                  className="w-full px-3 py-2 rounded-lg border border-rose-300 bg-rose-50/30 font-black text-rose-950 focus:ring-2 focus:ring-rose-500"
+                />
+                <p className="text-[10px] text-rose-700 mt-0.5">0 = Auto Pro-Rata Daily Rate (Negative values NOT allowed)</p>
+                {Number(officeTiming.customDeductionAmount) < 0 && (
+                  <p className="text-xs font-black text-rose-600 mt-1">❌ Attendance deduction cannot be negative.</p>
+                )}
+              </div>
             </div>
-            <div>
-              <label className="block mb-1 text-slate-700 text-[11px] uppercase">Half-Day Arrival Cutoff</label>
-              <input type="time" value={officeTiming.halfDayCutoff} onChange={(e) => setOfficeTiming({ ...officeTiming, halfDayCutoff: e.target.value })} className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white text-amber-900 font-extrabold" />
+
+            {/* Column 2: Working Hours Live Preview & Policy Summary */}
+            <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col justify-between space-y-3">
+              <div>
+                <h4 className="text-xs font-black uppercase text-slate-800 tracking-wider mb-2">📊 Shift Working Hours Live Preview</h4>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-2xs">
+                    <p className="text-[10px] font-black text-slate-500 uppercase">Working Hours</p>
+                    <p className="text-base font-black text-slate-900 mt-0.5">
+                      {formatDecToText(calcShiftTotalHours(officeTiming.start, officeTiming.end))}
+                    </p>
+                    <p className="text-[10px] text-slate-400 font-bold mt-0.5">Shift End - Shift Start</p>
+                  </div>
+                  <div className="bg-white p-3 rounded-lg border border-indigo-200 shadow-2xs">
+                    <p className="text-[10px] font-black text-indigo-700 uppercase">Half-Day Hours</p>
+                    <p className="text-base font-black text-indigo-950 mt-0.5">
+                      {formatDecToText(Number(officeTiming.halfDayWorkingHours) || 0)}
+                    </p>
+                    <p className="text-[10px] text-indigo-500 font-bold mt-0.5">Working Hours / 2</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-1 text-[11px] text-slate-700 font-bold bg-white p-3 rounded-lg border border-slate-200">
+                <p className="font-extrabold text-slate-900 uppercase text-[10px] mb-1">💡 Automated Business Rules Enforcement:</p>
+                <p>🟢 <strong>Present (100% Pay):</strong> Check-in ≤ Cutoff ({officeTiming.halfDayCutoff}) AND Worked ≥ {officeTiming.halfDayWorkingHours}h AND Checkout ≥ Shift End.</p>
+                <p>🟡 <strong>Half Day (50% Pay):</strong> Check-in &gt; Cutoff OR Worked &lt; {officeTiming.halfDayWorkingHours}h OR Early checkout.</p>
+                <p>🔵 <strong>Paid Leave:</strong> 100% Salary (No deduction).</p>
+                <p>🟣 <strong>Approved Unpaid Leave / 🔴 Absent:</strong> Salary deduction according to policy.</p>
+              </div>
+
+              <div className="flex justify-end pt-1">
+                <button
+                  type="button"
+                  onClick={handleSaveTimings}
+                  disabled={Number(officeTiming.customDeductionAmount) < 0}
+                  className="w-full sm:w-auto px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  💾 Save Shift Policy Rules
+                </button>
+              </div>
             </div>
-            <div>
-              <label className="block mb-1 text-slate-700 text-[11px] uppercase">Early Exit Cutoff (2 PM)</label>
-              <input type="time" value={officeTiming.earlyLeaveCutoff} onChange={(e) => setOfficeTiming({ ...officeTiming, earlyLeaveCutoff: e.target.value })} className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white text-rose-800 font-extrabold" />
-            </div>
-            <div>
-              <label className="block mb-1 text-slate-700 text-[11px] uppercase">Shift End Time</label>
-              <input type="time" value={officeTiming.end} onChange={(e) => setOfficeTiming({ ...officeTiming, end: e.target.value })} className="w-full px-3 py-1.5 rounded border border-slate-300 bg-white" />
-            </div>
-          </div>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-3 pt-2.5 border-t border-slate-100">
-            <p className="text-[11px] text-slate-500 font-bold">
-              💡 Rule Enforcement: Any staff logging check-in after {officeTiming.halfDayCutoff} or leaving prior to {officeTiming.earlyLeaveCutoff} gets assigned <strong>Half-Day (0.5)</strong> attendance value.
-            </p>
-            <button
-              type="button"
-              onClick={handleSaveTimings}
-              className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-black uppercase transition-all shadow shrink-0 cursor-pointer"
-            >
-              💾 Save Custom Timings
-            </button>
           </div>
         </div>
       )}
@@ -266,9 +393,17 @@ const Attendance = () => {
                       {safeFormatTime(record.checkOut)}
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${statusStyle[record.status] || 'bg-slate-100 text-slate-700'}`}>
-                        {record.status?.replace('_', ' ')}
-                      </span>
+                      {(() => {
+                        const badge = statusBadge[record.status] || {
+                          label: record.status?.replace('_', ' ') || 'Unknown',
+                          style: 'bg-slate-100 text-slate-700 border-slate-300 font-black',
+                        };
+                        return (
+                          <span className={`px-2.5 py-0.5 rounded text-[10px] uppercase tracking-wider border ${badge.style}`}>
+                            {badge.label}
+                          </span>
+                        );
+                      })()}
                     </td>
                     <td className="py-3 px-4">
                       {record.overrideNotes ? (

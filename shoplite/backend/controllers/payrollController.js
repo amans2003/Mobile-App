@@ -2,6 +2,7 @@ const Payroll = require('../models/Payroll');
 const User = require('../models/User');
 const Attendance = require('../models/Attendance');
 const AttendanceRule = require('../models/AttendanceRule');
+const { calculateEmployeePayroll, validateDeductionAmount } = require('../utils/payrollCalculator');
 
 /**
  * @desc    Generate/process payroll for a specific month
@@ -35,40 +36,22 @@ const generatePayroll = async (req, res) => {
       const sal = emp.salary || {};
       const ded = sal.deductions || {};
 
-      // Count attendance for the month (present, late, half_day, on_leave)
+      // Fetch all monthly attendance records (present, late, half_day, on_leave, unpaid_leave, absent)
       const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
       const endDate = `${year}-${String(month).padStart(2, '0')}-31`;
 
       const attendanceRecords = await Attendance.find({
         employee: emp._id,
         date: { $gte: startDate, $lte: endDate },
-        status: { $in: ['present', 'late', 'half_day', 'on_leave'] },
       });
 
-      // Calculate exact attendance credit: Full Day = 1.0, Half Day = 0.5
-      let presentDays = 0;
-      attendanceRecords.forEach((r) => {
-        if (r.status === 'half_day') {
-          presentDays += 0.5;
-        } else {
-          presentDays += 1.0;
-        }
+      // Calculate payroll breakdown using payrollCalculator utility
+      const calc = calculateEmployeePayroll({
+        salary: sal,
+        attendanceRecords,
+        workingDays,
+        customDeductionAmount: rule?.customDeductionAmount || 0,
       });
-      presentDays = Math.min(workingDays, presentDays);
-
-      const baseGross = (sal.basic || 0) + (sal.hra || 0) + (sal.transport || 0) + (sal.medical || 0) + (sal.special || 0);
-      
-      // Calculate total overtime hours
-      const totalOvertime = attendanceRecords.reduce((sum, r) => sum + (r.overtime || 0), 0);
-      const overtimePay = Math.round(totalOvertime * (baseGross / (workingDays * 8)));
-
-      const unpaidLeaveDays = Math.max(0, workingDays - presentDays);
-      const perDayRate = baseGross / workingDays;
-      const unpaidLeaveDeduction = Math.round(unpaidLeaveDays * perDayRate);
-
-      const grossSalary = baseGross + overtimePay;
-      const totalDeductions = (ded.tax || 0) + (ded.insurance || 0) + (ded.providentFund || 0) + unpaidLeaveDeduction;
-      const netSalary = Math.max(0, grossSalary - totalDeductions);
 
       const payrollData = {
         employee: emp._id,
@@ -79,19 +62,19 @@ const generatePayroll = async (req, res) => {
         transport: sal.transport || 0,
         medical: sal.medical || 0,
         special: sal.special || 0,
-        overtime: overtimePay,
+        overtime: calc.overtimePay,
         tax: ded.tax || 0,
         insurance: ded.insurance || 0,
         providentFund: ded.providentFund || 0,
-        unpaidLeaveDays,
-        unpaidLeaveDeduction,
-        grossSalary,
-        totalDeductions,
-        netSalary,
+        unpaidLeaveDays: calc.totalUnpaidDays,
+        unpaidLeaveDeduction: calc.attendanceDeduction,
+        grossSalary: calc.grossSalary,
+        totalDeductions: calc.totalDeductions,
+        netSalary: calc.netSalary,
         status: 'processed',
         processedBy: req.user._id,
-        workingDays,
-        presentDays,
+        workingDays: calc.workingDays,
+        presentDays: calc.presentDays,
       };
 
       const payroll = await Payroll.findOneAndUpdate(

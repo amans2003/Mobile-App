@@ -179,10 +179,10 @@ const reviewLeave = async (req, res) => {
         const endDt = new Date(leave.endDate);
         while (currDate <= endDt) {
           const dateStr = currDate.toISOString().split('T')[0];
-          const attStatus = hasEnoughBalance ? 'on_leave' : 'absent';
+          const attStatus = hasEnoughBalance ? 'on_leave' : 'unpaid_leave';
           const attNotes = hasEnoughBalance
             ? `Approved Paid Leave (${leave.leaveType.toUpperCase()}) - Zero Salary Deduction`
-            : `Approved Leave without quota (0 Balance Left) - 100% Salary Deducted for absent day`;
+            : `Approved Unpaid Leave (0 Quota Remaining) - Salary Deducted according to policy`;
 
           await Attendance.findOneAndUpdate(
             { employee: leave.employee, date: dateStr },
