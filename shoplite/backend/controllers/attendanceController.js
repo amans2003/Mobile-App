@@ -117,10 +117,16 @@ const checkOut = async (req, res) => {
       record.overtime = Math.round((diffHours - 8) * 100) / 100;
     }
 
-    // If check-out is early (e.g. before 4.5 total hours) and status wasn't manually overridden by HR
-    if (!record.isManuallyEdited && diffHours < 4.5) {
-      record.status = 'half_day';
-      record.notes = `Automatic Half-Day: Early departure after only ${diffHours} hours`;
+    // Status evaluation upon check-out based on completed work hours
+    if (!record.isManuallyEdited && !record.notes?.includes('Approved Half-Day')) {
+      if (diffHours < 4.5) {
+        record.status = 'half_day';
+        record.notes = `Automatic Half-Day: Early departure after only ${diffHours} hours`;
+      } else {
+        // Employee completed full time work (>= 4.5 hours) -> status is Present!
+        record.status = 'present';
+        record.notes = `Full Day Work Completed (${diffHours} hours worked)`;
+      }
     }
 
     await record.save();
@@ -271,6 +277,22 @@ const getAttendanceLogs = async (req, res) => {
     if (!date && !employee && !status) {
       filter.date = getTodayString();
     }
+
+    // Auto-correct any unedited records where full work hours (>= 4.5 hrs) were completed but status remained half_day
+    await Attendance.updateMany(
+      {
+        workHours: { $gte: 4.5 },
+        status: 'half_day',
+        isManuallyEdited: { $ne: true },
+        notes: { $not: /Approved Half-Day/i },
+      },
+      {
+        $set: {
+          status: 'present',
+          notes: 'Full Day Work Completed',
+        },
+      }
+    );
 
     const logs = await Attendance.find(filter)
       .populate('employee', 'name email employeeId department designation avatar')
