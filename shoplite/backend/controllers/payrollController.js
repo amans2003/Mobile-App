@@ -26,13 +26,6 @@ const generatePayroll = async (req, res) => {
     const results = [];
 
     for (const emp of employees) {
-      // Check if payroll already exists
-      const existing = await Payroll.findOne({ employee: emp._id, month, year });
-      if (existing) {
-        results.push({ employee: emp.name, status: 'already_exists', payroll: existing });
-        continue;
-      }
-
       const sal = emp.salary || {};
       const ded = sal.deductions || {};
 
