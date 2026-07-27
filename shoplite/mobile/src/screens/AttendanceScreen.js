@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, RefreshControl, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { checkIn, checkOut, getMyTodayAttendance, getMyAttendanceHistory } from '../services/api';
 
@@ -70,7 +71,11 @@ const AttendanceScreen = () => {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useFocusEffect(
+    useCallback(() => {
+      loadData();
+    }, [loadData])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);

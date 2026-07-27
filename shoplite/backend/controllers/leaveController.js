@@ -135,16 +135,21 @@ const reviewLeave = async (req, res) => {
         while (currDate <= endDt) {
           const dateStr = currDate.toISOString().split('T')[0];
           const existingAtt = await Attendance.findOne({ employee: leave.employee, date: dateStr });
-          const checkInTime = existingAtt && existingAtt.checkIn ? existingAtt.checkIn : new Date(dateStr + 'T10:00:00.000Z');
-          const checkOutTime = existingAtt && existingAtt.checkOut ? existingAtt.checkOut : new Date();
+          const now = new Date();
+          const checkInObj = (existingAtt && existingAtt.checkIn && existingAtt.checkIn.time)
+            ? existingAtt.checkIn
+            : { time: new Date(dateStr + 'T10:00:00.000Z'), location: { latitude: null, longitude: null } };
+          const checkOutObj = (existingAtt && existingAtt.checkOut && existingAtt.checkOut.time)
+            ? existingAtt.checkOut
+            : { time: now, location: { latitude: null, longitude: null } };
 
           await Attendance.findOneAndUpdate(
             { employee: leave.employee, date: dateStr },
             {
               employee: leave.employee,
               date: dateStr,
-              checkIn: checkInTime,
-              checkOut: checkOutTime, // Automatic check-out applied upon HR Half-Day approval!
+              checkIn: checkInObj,
+              checkOut: checkOutObj, // Guaranteed object with .time populated for mobile app auto-checkout!
               status: 'half_day',
               workHours: 4,
               notes: hadBalance
