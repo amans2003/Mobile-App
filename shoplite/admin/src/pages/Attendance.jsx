@@ -132,6 +132,8 @@ const Attendance = () => {
     try {
       await overrideAttendance(overrideModal.record._id, {
         status: overrideModal.status,
+        manualReason: overrideModal.notes,
+        notes: overrideModal.notes,
         overrideNotes: overrideModal.notes,
       });
       alert('✅ Attendance status updated manually by HR!');
@@ -406,9 +408,9 @@ const Attendance = () => {
                       })()}
                     </td>
                     <td className="py-3 px-4">
-                      {record.overrideNotes ? (
+                      {record.overrideNotes || record.notes || record.manualReason ? (
                         <p className="text-[11px] font-extrabold text-slate-900 bg-slate-100 p-1.5 rounded border border-slate-200">
-                          📝 "{record.overrideNotes}"
+                          📝 "{record.overrideNotes || record.notes || record.manualReason}"
                         </p>
                       ) : (
                         <span className="text-slate-300 italic text-[11px]">No manual override</span>
@@ -416,7 +418,7 @@ const Attendance = () => {
                     </td>
                     <td className="py-3 px-4 text-right">
                       <button
-                        onClick={() => setOverrideModal({ show: true, record, status: record.status || 'half_day', notes: record.overrideNotes || '' })}
+                        onClick={() => setOverrideModal({ show: true, record, status: record.status || 'half_day', notes: record.overrideNotes || record.notes || record.manualReason || '' })}
                         className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-black text-[11px] uppercase transition-all shadow-xs cursor-pointer"
                       >
                         ✎ Edit Status

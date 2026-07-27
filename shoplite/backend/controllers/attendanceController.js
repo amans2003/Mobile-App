@@ -226,9 +226,9 @@ const updateAttendanceRules = async (req, res) => {
  */
 const updateAttendanceStatus = async (req, res) => {
   try {
-    const { status, manualReason } = req.body;
+    const { status, manualReason, overrideNotes, notes } = req.body;
 
-    if (!['present', 'absent', 'half_day', 'late', 'on_leave', 'holiday', 'weekend'].includes(status)) {
+    if (!['present', 'absent', 'half_day', 'late', 'on_leave', 'unpaid_leave', 'holiday', 'weekend'].includes(status)) {
       return res.status(400).json({ message: 'Invalid attendance status selected' });
     }
 
@@ -237,8 +237,11 @@ const updateAttendanceStatus = async (req, res) => {
       return res.status(404).json({ message: 'Attendance record not found' });
     }
 
+    const reasonText = overrideNotes || notes || manualReason || 'Manually edited by HR Manager';
+
     record.status = status;
-    record.manualReason = manualReason || 'Manually edited by HR Manager';
+    record.manualReason = reasonText;
+    record.notes = reasonText;
     record.isManuallyEdited = true;
 
     await record.save();
