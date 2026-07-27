@@ -27,11 +27,11 @@ const Leaves = () => {
 
   useEffect(() => { loadLeaves(); }, [statusFilter]);
 
-  const handleReview = async (id, status) => {
+  const handleReview = async (id, status, approvalType = 'full_day') => {
     try {
       setReviewingId(id);
       const notes = status === 'rejected' ? prompt('Reason for rejection (optional):') || '' : '';
-      await reviewLeave(id, { status, reviewerNotes: notes });
+      await reviewLeave(id, { status, reviewerNotes: notes, approvalType });
       loadLeaves();
     } catch (error) {
       alert(error.response?.data?.message || 'Error reviewing leave');
@@ -138,24 +138,40 @@ const Leaves = () => {
                     </td>
                     <td className="py-3 px-4 text-right space-x-1.5">
                       {l.status === 'pending' ? (
-                        <>
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
                           <button
-                            onClick={() => handleReview(l._id, 'approved')}
+                            onClick={() => handleReview(l._id, 'approved', 'full_day')}
                             disabled={reviewingId === l._id}
-                            className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-black text-[11px] uppercase transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                            title="Approve full day leave"
+                            className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-600 text-white font-black text-[10px] uppercase transition-all shadow-xs cursor-pointer disabled:opacity-50"
                           >
-                            ✓ Approve
+                            ✓ Approve (Full)
                           </button>
                           <button
-                            onClick={() => handleReview(l._id, 'rejected')}
+                            onClick={() => handleReview(l._id, 'approved', 'half_day')}
                             disabled={reviewingId === l._id}
-                            className="px-2.5 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 font-black text-[11px] uppercase transition-all cursor-pointer disabled:opacity-50"
+                            title="Approve as half-day with automatic check-out and 50% salary deduction if no quota left"
+                            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white font-black text-[10px] uppercase transition-all shadow-xs cursor-pointer disabled:opacity-50"
+                          >
+                            ⛅ Half-Day (Auto-Exit)
+                          </button>
+                          <button
+                            onClick={() => handleReview(l._id, 'rejected', null)}
+                            disabled={reviewingId === l._id}
+                            className="px-2.5 py-1 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-800 border border-rose-200 font-black text-[10px] uppercase transition-all cursor-pointer disabled:opacity-50"
                           >
                             Reject
                           </button>
-                        </>
+                        </div>
                       ) : (
-                        <span className="text-slate-400 font-bold text-[11px] italic">Reviewed by HR</span>
+                        <div className="text-right">
+                          <span className="text-slate-400 font-bold text-[11px] italic block">Reviewed by HR</span>
+                          {l.approvalType === 'half_day' && (
+                            <span className="inline-block mt-0.5 px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-300 font-black text-[9px] uppercase rounded">
+                              ⛅ Half-Day Check-Out
+                            </span>
+                          )}
+                        </div>
                       )}
                     </td>
                   </tr>

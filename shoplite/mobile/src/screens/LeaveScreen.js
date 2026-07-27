@@ -374,6 +374,10 @@ const LeaveScreen = () => {
             onChangeText={(t) => setForm({ ...form, reason: t })}
           />
 
+          <Text style={[styles.formSectionLabel, { fontSize: 11, color: theme.primary, marginTop: 4, marginBottom: 12, fontWeight: '700' }]}>
+            💡 Note: You can apply for leave even with 0 quota left or after checking in today. HR can approve as Half-Day (Automatic Check-Out & 50% deduction) or Full Unpaid (100% deduction).
+          </Text>
+
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit} disabled={submitting}>
             <Text style={styles.submitBtnText}>{submitting ? 'Submitting to HR...' : 'Submit Leave Request'}</Text>
           </TouchableOpacity>

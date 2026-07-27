@@ -38,6 +38,11 @@ const leaveRequestSchema = new mongoose.Schema(
       enum: ['pending', 'approved', 'rejected', 'cancelled'],
       default: 'pending',
     },
+    approvalType: {
+      type: String,
+      enum: ['full_day', 'half_day'],
+      default: 'full_day',
+    },
     reviewedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

@@ -25,17 +25,8 @@ const applyLeave = async (req, res) => {
       return res.status(400).json({ message: 'Invalid date range' });
     }
 
-    // Check leave balance for paid leave types
-    const user = await User.findById(req.user._id);
-    const paidLeaveTypes = ['pto', 'sick', 'casual'];
-    if (paidLeaveTypes.includes(leaveType)) {
-      const balance = user.leaveBalances[leaveType] || 0;
-      if (totalDays > balance) {
-        return res.status(400).json({
-          message: `Insufficient ${leaveType.toUpperCase()} balance. Available: ${balance} days, Requested: ${totalDays} days`,
-        });
-      }
-    }
+    // If employee has no leave balance left, they can still apply (especially after check-in for early exit / emergency).
+    // HR will review and decide whether to approve as Half-Day (50% salary deduct) or Unpaid Full Day (100% salary deduct).
 
     const leave = await LeaveRequest.create({
       employee: req.user._id,
@@ -103,7 +94,7 @@ const getAllLeaves = async (req, res) => {
  */
 const reviewLeave = async (req, res) => {
   try {
-    const { status, reviewerNotes } = req.body;
+    const { status, reviewerNotes, approvalType } = req.body;
 
     if (!['approved', 'rejected'].includes(status)) {
       return res.status(400).json({ message: 'Status must be approved or rejected' });
@@ -122,34 +113,80 @@ const reviewLeave = async (req, res) => {
     leave.reviewedBy = req.user._id;
     leave.reviewerNotes = reviewerNotes || '';
     leave.reviewedAt = new Date();
-
-    // If approved, deduct from leave balance
     if (status === 'approved') {
-      const paidLeaveTypes = ['pto', 'sick', 'casual'];
-      if (paidLeaveTypes.includes(leave.leaveType)) {
+      leave.approvalType = approvalType || 'full_day';
+    }
+
+    // If approved, handle Half-Day (Automatic Check-Out) vs Full-Day logic
+    if (status === 'approved') {
+      if (approvalType === 'half_day') {
+        leave.approvalType = 'half_day';
         const user = await User.findById(leave.employee);
-        if (user) {
-          user.leaveBalances[leave.leaveType] = Math.max(
-            0,
-            (user.leaveBalances[leave.leaveType] || 0) - leave.totalDays
-          );
+        const paidLeaveTypes = ['pto', 'sick', 'casual'];
+        let hadBalance = false;
+        if (paidLeaveTypes.includes(leave.leaveType) && user && (user.leaveBalances[leave.leaveType] || 0) >= 0.5) {
+          user.leaveBalances[leave.leaveType] = Math.max(0, (user.leaveBalances[leave.leaveType] || 0) - 0.5);
           await user.save();
+          hadBalance = true;
         }
-        
-        // Automatically register approved paid leaves in the attendance register as "on_leave"
-        // This ensures the payroll engine counts these days as 100% present with ZERO salary deduction!
+
         let currDate = new Date(leave.startDate);
         const endDt = new Date(leave.endDate);
         while (currDate <= endDt) {
           const dateStr = currDate.toISOString().split('T')[0];
+          const existingAtt = await Attendance.findOne({ employee: leave.employee, date: dateStr });
+          const checkInTime = existingAtt && existingAtt.checkIn ? existingAtt.checkIn : new Date(dateStr + 'T10:00:00.000Z');
+          const checkOutTime = existingAtt && existingAtt.checkOut ? existingAtt.checkOut : new Date();
+
           await Attendance.findOneAndUpdate(
             { employee: leave.employee, date: dateStr },
             {
               employee: leave.employee,
               date: dateStr,
-              status: 'on_leave',
-              notes: `Approved Paid Leave (${leave.leaveType.toUpperCase()}) - Zero Salary Deduction`,
-              workHours: 8,
+              checkIn: checkInTime,
+              checkOut: checkOutTime, // Automatic check-out applied upon HR Half-Day approval!
+              status: 'half_day',
+              workHours: 4,
+              notes: hadBalance
+                ? `Automatic Half-Day Check-Out by HR. 0.5 ${leave.leaveType.toUpperCase()} deducted from quota.`
+                : `Automatic Half-Day Check-Out by HR (0 Leave Quota Left). 50% salary deducted for half day.`,
+            },
+            { new: true, upsert: true }
+          );
+          currDate.setDate(currDate.getDate() + 1);
+        }
+      } else {
+        leave.approvalType = 'full_day';
+        const user = await User.findById(leave.employee);
+        const paidLeaveTypes = ['pto', 'sick', 'casual'];
+        let hasEnoughBalance = false;
+
+        if (paidLeaveTypes.includes(leave.leaveType) && user) {
+          const currentBal = user.leaveBalances[leave.leaveType] || 0;
+          if (currentBal > 0) {
+            hasEnoughBalance = true;
+            user.leaveBalances[leave.leaveType] = Math.max(0, currentBal - leave.totalDays);
+            await user.save();
+          }
+        }
+
+        let currDate = new Date(leave.startDate);
+        const endDt = new Date(leave.endDate);
+        while (currDate <= endDt) {
+          const dateStr = currDate.toISOString().split('T')[0];
+          const attStatus = hasEnoughBalance ? 'on_leave' : 'absent';
+          const attNotes = hasEnoughBalance
+            ? `Approved Paid Leave (${leave.leaveType.toUpperCase()}) - Zero Salary Deduction`
+            : `Approved Leave without quota (0 Balance Left) - 100% Salary Deducted for absent day`;
+
+          await Attendance.findOneAndUpdate(
+            { employee: leave.employee, date: dateStr },
+            {
+              employee: leave.employee,
+              date: dateStr,
+              status: attStatus,
+              notes: attNotes,
+              workHours: hasEnoughBalance ? 8 : 0,
             },
             { new: true, upsert: true }
           );
