@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useTheme } from '../context/ThemeContext';
 import { getMySalary } from '../services/api';
 
@@ -35,7 +36,11 @@ const SalaryScreen = () => {
     }
   }, []);
 
-  useEffect(() => { loadSalary(); }, [loadSalary]);
+  useFocusEffect(
+    useCallback(() => {
+      loadSalary();
+    }, [loadSalary])
+  );
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
