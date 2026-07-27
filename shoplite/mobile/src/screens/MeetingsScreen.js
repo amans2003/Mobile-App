@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { createMeeting, getMyMeetings, rsvpMeeting, fetchEmployees } from '../services/api';
+import { createMeeting, updateMeeting, getMyMeetings, rsvpMeeting, fetchEmployees } from '../services/api';
 
 /**
  * Safe date/time formatting helper for displaying lists
@@ -60,6 +60,7 @@ const MeetingsScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedAttendees, setSelectedAttendees] = useState([]);
+  const [editingMeetingId, setEditingMeetingId] = useState(null);
   const [form, setForm] = useState({ title: '', description: '', startTime: '', endTime: '', meetingLink: '' });
 
   // ── Calendar & Time Picker Modal State ──────────────────────────────
@@ -202,17 +203,38 @@ const MeetingsScreen = () => {
     }
     try {
       setSubmitting(true);
-      await createMeeting({ ...form, attendees: selectedAttendees });
-      Alert.alert('✅ Meeting Scheduled', `Successfully scheduled "${form.title}" and notified invited employees.`);
+      if (editingMeetingId) {
+        await updateMeeting(editingMeetingId, { ...form, attendees: selectedAttendees });
+        Alert.alert('✅ Meeting Updated', `Successfully updated "${form.title}".`);
+      } else {
+        await createMeeting({ ...form, attendees: selectedAttendees });
+        Alert.alert('✅ Meeting Scheduled', `Successfully scheduled "${form.title}" and notified invited employees.`);
+      }
       setShowForm(false);
+      setEditingMeetingId(null);
       setForm({ title: '', description: '', startTime: '', endTime: '', meetingLink: '' });
       setSelectedAttendees([]);
       loadData();
     } catch (error) {
-      Alert.alert('Notice', error.response?.data?.message || 'Failed to schedule meeting. Check network connection.');
+      Alert.alert('Notice', error.response?.data?.message || 'Failed to save meeting. Check network connection.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleEditMeeting = (meeting) => {
+    setEditingMeetingId(meeting._id);
+    setForm({
+      title: meeting.title || '',
+      description: meeting.description || '',
+      meetingLink: meeting.meetingLink || '',
+      startTime: meeting.startTime ? safeFormatDateTime(meeting.startTime) : '',
+      endTime: meeting.endTime ? safeFormatDateTime(meeting.endTime) : '',
+    });
+
+    const attendeeIds = meeting.attendees?.map((a) => String(a.user?._id || a.user || a._id)).filter(Boolean) || [];
+    setSelectedAttendees(attendeeIds);
+    setShowForm(true);
   };
 
   const handleRsvp = async (meetingId, status) => {
@@ -366,7 +388,7 @@ const MeetingsScreen = () => {
 
           <Text style={styles.formSectionLabel}>3. Invite Staff & Attendees ({selectedAttendees.length} selected)</Text>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 8 }}>
-            {employees.map((emp) => (
+            {employees.filter((emp) => String(emp._id) !== String(user?._id) && emp.email !== user?.email).map((emp) => (
               <TouchableOpacity key={emp._id}
                 style={[styles.attendeeChip, {
                   borderColor: selectedAttendees.includes(emp._id) ? theme.primary : theme.border,
@@ -380,13 +402,13 @@ const MeetingsScreen = () => {
                 </Text>
               </TouchableOpacity>
             ))}
-            {employees.length === 0 && (
-              <Text style={{ fontSize: 12, color: theme.textMuted, fontStyle: 'italic' }}>No other staff members loaded from directory.</Text>
+            {employees.filter((emp) => String(emp._id) !== String(user?._id) && emp.email !== user?.email).length === 0 && (
+              <Text style={{ fontSize: 12, color: theme.textMuted, fontStyle: 'italic' }}>No other staff members found in directory to invite.</Text>
             )}
           </View>
 
           <TouchableOpacity style={styles.submitBtn} onPress={handleCreate} disabled={submitting}>
-            <Text style={styles.submitBtnText}>{submitting ? 'Broadcasting Invitations...' : 'Schedule & Send Invites'}</Text>
+            <Text style={styles.submitBtnText}>{submitting ? 'Saving Changes...' : editingMeetingId ? '💾 Save Meeting Changes' : 'Schedule & Send Invites'}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -436,11 +458,19 @@ const MeetingsScreen = () => {
                   </TouchableOpacity>
                 </View>
               ) : (
-                <View style={[styles.organizerBanner, { borderTopColor: theme.border }]}>
-                  <Ionicons name="mic-outline" size={16} color={theme.primary} />
-                  <Text style={[styles.organizerBannerText, { color: theme.primary }]}>
-                    👑 You are conducting this meeting (Organizer)
-                  </Text>
+                <View style={[styles.organizerBanner, { borderTopColor: theme.border, flexDirection: 'row', alignItems: 'center', justifyBetween: 'space-between' }]}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flex: 1 }}>
+                    <Ionicons name="mic-outline" size={16} color={theme.primary} />
+                    <Text style={[styles.organizerBannerText, { color: theme.primary }]}>
+                      👑 Meeting Organizer
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    onPress={() => handleEditMeeting(meeting)}
+                    style={{ backgroundColor: theme.primary, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, marginLeft: 8 }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 11, fontWeight: '800' }}>✏️ Edit Meeting</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

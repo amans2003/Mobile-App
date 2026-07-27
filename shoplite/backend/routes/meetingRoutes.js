@@ -4,6 +4,7 @@ const { protect } = require('../middleware/authMiddleware');
 const { adminOnly } = require('../middleware/adminMiddleware');
 const {
   createMeeting,
+  updateMeeting,
   getMyMeetings,
   getAllMeetings,
   rsvpMeeting,
@@ -13,6 +14,9 @@ const {
 // ── Employee Self-Service ────────────────────────────────────
 // @route   POST /api/meetings
 router.post('/', protect, createMeeting);
+
+// @route   PUT /api/meetings/:id
+router.put('/:id', protect, updateMeeting);
 
 // @route   GET /api/meetings/my
 router.get('/my', protect, getMyMeetings);

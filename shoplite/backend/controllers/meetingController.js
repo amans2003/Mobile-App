@@ -17,7 +17,16 @@ const createMeeting = async (req, res) => {
       return res.status(400).json({ message: 'At least one attendee is required' });
     }
 
-    const attendeeList = attendees.map((userId) => ({
+    // Filter out the organizer so an employee cannot invite themselves
+    const validAttendees = attendees.filter(
+      (userId) => userId.toString() !== req.user._id.toString()
+    );
+
+    if (validAttendees.length === 0) {
+      return res.status(400).json({ message: 'Please select at least one employee other than yourself to invite' });
+    }
+
+    const attendeeList = validAttendees.map((userId) => ({
       user: userId,
       status: 'pending',
     }));
@@ -154,8 +163,67 @@ const cancelMeeting = async (req, res) => {
   }
 };
 
+/**
+ * @desc    Update / Edit an existing meeting
+ * @route   PUT /api/meetings/:id
+ * @access  Private (organiser or HR/Admin)
+ */
+const updateMeeting = async (req, res) => {
+  try {
+    const { title, description, attendees, startTime, endTime, meetingLink, location } = req.body;
+
+    const meeting = await Meeting.findById(req.params.id);
+    if (!meeting) {
+      return res.status(404).json({ message: 'Meeting not found' });
+    }
+
+    // Only organizer or HR/Admin can edit meeting
+    const isOrganizer = meeting.organizer.toString() === req.user._id.toString();
+    const isAdminOrHr = ['admin', 'hr'].includes(req.user.role);
+    if (!isOrganizer && !isAdminOrHr) {
+      return res.status(403).json({ message: 'Only the meeting organizer or HR can edit this meeting' });
+    }
+
+    if (title) meeting.title = title;
+    if (description !== undefined) meeting.description = description;
+    if (startTime) meeting.startTime = new Date(startTime);
+    if (endTime) meeting.endTime = new Date(endTime);
+    if (meetingLink !== undefined) meeting.meetingLink = meetingLink;
+    if (location !== undefined) meeting.location = location;
+
+    if (attendees && Array.isArray(attendees)) {
+      // Filter out the organizer from attendees list so they cannot invite themselves
+      const validAttendees = attendees.filter(
+        (userId) => userId.toString() !== meeting.organizer.toString() && userId.toString() !== req.user._id.toString()
+      );
+
+      // Preserve existing RSVP status if attendee was already invited
+      const updatedAttendeeList = validAttendees.map((userId) => {
+        const existing = meeting.attendees.find((a) => a.user.toString() === userId.toString());
+        return {
+          user: userId,
+          status: existing ? existing.status : 'pending',
+        };
+      });
+      meeting.attendees = updatedAttendeeList;
+    }
+
+    await meeting.save();
+
+    const updated = await Meeting.findById(meeting._id)
+      .populate('organizer', 'name email designation avatar')
+      .populate('attendees.user', 'name email designation avatar');
+
+    res.json(updated);
+  } catch (error) {
+    console.error('Update meeting error:', error.message);
+    res.status(500).json({ message: 'Server error updating meeting' });
+  }
+};
+
 module.exports = {
   createMeeting,
+  updateMeeting,
   getMyMeetings,
   getAllMeetings,
   rsvpMeeting,

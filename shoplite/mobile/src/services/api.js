@@ -81,6 +81,7 @@ export const uploadExpenseReceipt = (formData) => API.post('/expenses/upload', f
 // MEETINGS API
 // ============================================================
 export const createMeeting = (data) => API.post('/meetings', data);
+export const updateMeeting = (id, data) => API.put(`/meetings/${id}`, data);
 export const getMyMeetings = () => API.get('/meetings/my');
 export const rsvpMeeting = (id, data) => API.put(`/meetings/${id}/rsvp`, data);
 export const cancelMeeting = (id) => API.put(`/meetings/${id}/cancel`);

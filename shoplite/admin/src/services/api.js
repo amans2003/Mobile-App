@@ -195,6 +195,18 @@ export function fetchAllMeetings() {
   return apiClient.get('/meetings');
 }
 
+export function createMeeting(data) {
+  return apiClient.post('/meetings', data);
+}
+
+export function updateMeeting(id, data) {
+  return apiClient.put(`/meetings/${id}`, data);
+}
+
+export function cancelMeeting(id) {
+  return apiClient.put(`/meetings/${id}/cancel`);
+}
+
 // ============================================================
 // ANNOUNCEMENTS API
 // ============================================================
