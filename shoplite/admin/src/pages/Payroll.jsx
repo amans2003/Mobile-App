@@ -132,20 +132,17 @@ const Payroll = () => {
       ) : (
         <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
           <div className="bg-slate-900 px-4 py-2.5 text-white flex items-center justify-between border-b border-slate-800">
-            <h2 className="text-xs font-black uppercase tracking-wider">📋 Monthly Pro-Rata Attendance & Take-Home Ledger ({month}/{year})</h2>
-            <span className="text-[10px] font-extrabold bg-white text-slate-900 px-2.5 py-0.5 rounded uppercase">FORMULA: (GROSS ÷ WORKING DAYS) × PRESENT SCORE</span>
+            <h2 className="text-xs font-black uppercase tracking-wider">📋 Monthly Pro-Rata Attendance & Salary Register ({month}/{year})</h2>
+            <span className="text-[10px] font-extrabold bg-white text-slate-900 px-2.5 py-0.5 rounded uppercase">CLEAN PRO-RATA PAYROLL LEDGER</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] border-collapse">
+            <table className="w-full min-w-[700px] border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-wider border-b border-slate-200">
                   <th className="text-left py-2.5 px-4">Staff Personnel</th>
                   <th className="text-right py-2.5 px-4">Gross Package (₹)</th>
-                  <th className="text-right py-2.5 px-4">Full Day Rate (₹)</th>
                   <th className="text-center py-2.5 px-4">Attendance Score (Days)</th>
-                  <th className="text-right py-2.5 px-4">Earned Attendance Pay (₹)</th>
                   <th className="text-right py-2.5 px-4">Attendance Deduction (₹)</th>
-                  <th className="text-right py-2.5 px-4">Tax & PF (₹)</th>
                   <th className="text-right py-2.5 px-4">Final Net Take-Home (₹)</th>
                 </tr>
               </thead>
@@ -161,7 +158,6 @@ const Payroll = () => {
                   const perDayRate = workingDays > 0 ? empGross / workingDays : 0;
 
                   const presentDays = rec ? rec.presentDays : (emp.presentDays ?? 26);
-                  const earnedPay = Math.round(presentDays * perDayRate);
                   const unpaidDays = rec ? (rec.unpaidLeaveDays || 0) : Math.max(0, workingDays - presentDays);
                   const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : Math.round(unpaidDays * perDayRate);
 
@@ -177,27 +173,18 @@ const Payroll = () => {
                       <td className="py-3 px-4 text-right font-black text-slate-900 font-mono">
                         {formatINR(empGross)}
                       </td>
-                      <td className="py-3 px-4 text-right font-black text-slate-600 font-mono">
-                        {formatINR(perDayRate)}<span className="text-[10px] text-slate-400 font-normal">/day</span>
-                      </td>
                       <td className="py-3 px-4 text-center">
                         <span className="px-2.5 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 text-[11px] font-black mr-1">
                           {presentDays} / {workingDays} Days
                         </span>
                         {unpaidDays > 0 && (
                           <span className="px-2.5 py-0.5 rounded bg-amber-50 text-amber-900 border border-amber-300 text-[11px] font-black">
-                            -{unpaidDays}d Deduction
+                            -{unpaidDays}d Unpaid
                           </span>
                         )}
                       </td>
-                      <td className="py-3 px-4 text-right font-mono font-black text-emerald-700 bg-emerald-50/30">
-                        + {formatINR(earnedPay)}
-                      </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-amber-800">
                         {attendanceDeduction > 0 ? `- ${formatINR(attendanceDeduction)}` : '₹0'}
-                      </td>
-                      <td className="py-3 px-4 text-right font-mono font-black text-rose-700">
-                        - {formatINR(proRatedTaxPf)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-sm text-emerald-950 bg-emerald-50/40">
                         {formatINR(finalTakeHome)}
