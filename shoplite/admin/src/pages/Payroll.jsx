@@ -136,13 +136,14 @@ const Payroll = () => {
             <span className="text-[10px] font-extrabold bg-white text-slate-900 px-2.5 py-0.5 rounded uppercase">FORMULA: (GROSS ÷ WORKING DAYS) × PRESENT SCORE</span>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[850px] border-collapse">
+            <table className="w-full min-w-[900px] border-collapse">
               <thead>
                 <tr className="bg-slate-100 text-slate-700 text-[11px] font-black uppercase tracking-wider border-b border-slate-200">
                   <th className="text-left py-2.5 px-4">Staff Personnel</th>
                   <th className="text-right py-2.5 px-4">Gross Package (₹)</th>
-                  <th className="text-right py-2.5 px-4">Per-Day Rate (₹)</th>
+                  <th className="text-right py-2.5 px-4">Full Day Rate (₹)</th>
                   <th className="text-center py-2.5 px-4">Attendance Score (Days)</th>
+                  <th className="text-right py-2.5 px-4">Earned Attendance Pay (₹)</th>
                   <th className="text-right py-2.5 px-4">Attendance Deduction (₹)</th>
                   <th className="text-right py-2.5 px-4">Tax & PF (₹)</th>
                   <th className="text-right py-2.5 px-4">Final Net Take-Home (₹)</th>
@@ -160,6 +161,7 @@ const Payroll = () => {
                   const perDayRate = workingDays > 0 ? empGross / workingDays : 0;
 
                   const presentDays = rec ? rec.presentDays : (emp.presentDays ?? 26);
+                  const earnedPay = Math.round(presentDays * perDayRate);
                   const unpaidDays = rec ? (rec.unpaidLeaveDays || 0) : Math.max(0, workingDays - presentDays);
                   const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : Math.round(unpaidDays * perDayRate);
                   const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - empDeductions - attendanceDeduction);
@@ -185,6 +187,9 @@ const Payroll = () => {
                             -{unpaidDays}d Deduction
                           </span>
                         )}
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-black text-emerald-700 bg-emerald-50/30">
+                        + {formatINR(earnedPay)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-amber-800">
                         {attendanceDeduction > 0 ? `- ${formatINR(attendanceDeduction)}` : '₹0'}
