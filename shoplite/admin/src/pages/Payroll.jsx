@@ -164,7 +164,9 @@ const Payroll = () => {
                   const earnedPay = Math.round(presentDays * perDayRate);
                   const unpaidDays = rec ? (rec.unpaidLeaveDays || 0) : Math.max(0, workingDays - presentDays);
                   const attendanceDeduction = rec ? (rec.unpaidLeaveDeduction || 0) : Math.round(unpaidDays * perDayRate);
-                  const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - empDeductions - attendanceDeduction);
+
+                  const proRatedTaxPf = Math.round(empDeductions * (workingDays > 0 ? Math.min(1, presentDays / workingDays) : 1));
+                  const finalTakeHome = rec ? rec.netSalary : Math.max(0, empGross - proRatedTaxPf - attendanceDeduction);
 
                   return (
                     <tr key={emp._id} className="hover:bg-slate-50 transition-colors">
@@ -195,7 +197,7 @@ const Payroll = () => {
                         {attendanceDeduction > 0 ? `- ${formatINR(attendanceDeduction)}` : '₹0'}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-rose-700">
-                        - {formatINR(empDeductions)}
+                        - {formatINR(proRatedTaxPf)}
                       </td>
                       <td className="py-3 px-4 text-right font-mono font-black text-sm text-emerald-950 bg-emerald-50/40">
                         {formatINR(finalTakeHome)}

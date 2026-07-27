@@ -83,11 +83,14 @@ const calculateEmployeePayroll = ({ salary, attendanceRecords, workingDays = 26,
   // Overtime Pay calculation
   const overtimePay = Math.round(totalOvertimeHours * (perDayRate / 8));
 
-  // Gross and Net Salary calculations
+  // Gross and Net Salary calculations with pro-rated statutory deductions based on days worked
   const grossSalary = baseGross + overtimePay;
-  const statutoryDeductions = (Number(ded.tax) || 0) + (Number(ded.insurance) || 0) + (Number(ded.providentFund) || 0);
+  const fullStatutory = (Number(ded.tax) || 0) + (Number(ded.insurance) || 0) + (Number(ded.providentFund) || 0);
+  const statutoryRatio = workingDays > 0 ? Math.min(1, presentDays / workingDays) : 1;
+  const statutoryDeductions = Math.round(fullStatutory * statutoryRatio);
+
   const totalDeductions = statutoryDeductions + attendanceDeduction;
-  const netSalary = Math.max(0, grossSalary - totalDeductions);
+  const netSalary = Math.max(0, Math.round(grossSalary - totalDeductions));
 
   return {
     baseGross,
