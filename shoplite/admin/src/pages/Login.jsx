@@ -71,7 +71,7 @@ const Login = () => {
               {/* Super Admin Quick Btn */}
               <button
                 type="button"
-                onClick={() => fillCredentials('admin@company.com', 'admin123')}
+                onClick={() => fillCredentials('admin@company.com', 'password123')}
                 className={`p-3 rounded-xl border-2 text-left transition-all ${
                   email === 'admin@company.com'
                     ? 'border-indigo-600 bg-indigo-50/70 shadow-sm'
@@ -86,7 +86,7 @@ const Login = () => {
               {/* HR Manager Quick Btn */}
               <button
                 type="button"
-                onClick={() => fillCredentials('hr@company.com', 'hr123')}
+                onClick={() => fillCredentials('hr@company.com', 'password123')}
                 className={`p-3 rounded-xl border-2 text-left transition-all ${
                   email === 'hr@company.com'
                     ? 'border-purple-600 bg-purple-50/70 shadow-sm'
