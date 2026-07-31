@@ -29,6 +29,19 @@ const seedDatabase = async () => {
 
     const users = await User.insertMany([
       {
+        name: 'Admin User',
+        email: 'admin@example.com',
+        password: await bcrypt.hash('Admin@123', salt),
+        phone: '+91 98765 43200',
+        role: 'super_admin',
+        department: 'Executive',
+        designation: 'System Administrator',
+        employeeId: 'EMP0000',
+        status: 'active',
+        salary: { basic: 150000, hra: 45000, transport: 5000, medical: 5000, special: 20000, deductions: { tax: 30000, insurance: 5000, providentFund: 18000 } },
+        leaveBalances: { pto: 25, sick: 15, casual: 10 },
+      },
+      {
         name: 'Aman Singh',
         email: 'admin@company.com',
         password: hashedPassword,
