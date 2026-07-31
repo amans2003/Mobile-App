@@ -27,8 +27,49 @@ connectDB();
 // MIDDLEWARE
 // ============================================================
 
-// Enable CORS for all origins (development)
-app.use(cors());
+// Robust CORS configuration supporting production web origins (Vercel), mobile apps, and local dev
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, Postman) or any web origin
+    callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: [
+    'Origin',
+    'X-Requested-With',
+    'Content-Type',
+    'Accept',
+    'Authorization',
+    'Access-Control-Allow-Headers',
+    'Access-Control-Request-Method',
+    'Access-Control-Request-Headers'
+  ],
+  exposedHeaders: ['Authorization'],
+  optionsSuccessStatus: 200 // Return 200 OK for OPTIONS preflight (prevents proxy issues with 204)
+};
+
+// Enable CORS middleware for all routes and preflight OPTIONS
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
+// Additional fallback middleware to guarantee CORS headers on all responses (including errors/404s/preflights)
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
 // Parse JSON request bodies
 app.use(express.json());
